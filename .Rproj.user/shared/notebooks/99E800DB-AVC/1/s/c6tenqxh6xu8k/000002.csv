@@ -1,0 +1,3 @@
+"0","hypertension <- as.data.frame(table(data_format$hypertension, data_format$stroke))"
+"0","colnames(hypertension) <- c('Hypertension','AVC','Fréquence')"
+"0","head(hypertension)"

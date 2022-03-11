@@ -1,0 +1,16 @@
+"0","```r
+
+
+gender <- as.data.frame(table(data_format$gender, data_format$stroke))
+colnames(gender) <- c('Genre','AVC','FrÃ©quence')
+str(gender)
+```"
+"1","'data.frame':	6 obs. of  3 variables:
+ $ Genre    : Factor w/ 3 levels \"Female\",\"Male\",..: 1 2 3 1 2 3
+ $ AVC      : Factor w/ 2 levels \"0\",\"1\": 1 1 1 2 2 2
+ $ FrÃ©quence: int  2777 1922 1 120 89 0
+"
+"0","```r
+ggplot(gender, aes(x = Genre, y = FrÃ©quence, fill = AVC)) +
+        geom_bar(stat = \"identity\")
+```"

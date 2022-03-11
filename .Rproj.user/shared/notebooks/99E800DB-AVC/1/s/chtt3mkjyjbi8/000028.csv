@@ -1,0 +1,3 @@
+"0","gender <- as.data.frame(table(data_format$gender, data_format$stroke))"
+"0","colnames(gender) <- c('Genre','AVC','Fréquence')"
+"0","head(gender)"

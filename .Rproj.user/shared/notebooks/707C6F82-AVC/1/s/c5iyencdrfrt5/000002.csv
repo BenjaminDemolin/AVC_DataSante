@@ -1,0 +1,7 @@
+"0","```r
+
+ggplot(data_format, aes(x=age,fill=stroke,  color=stroke)) +
+  geom_histogram(position=\"identity\", alpha=0.5)
+```"
+"1","`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+"

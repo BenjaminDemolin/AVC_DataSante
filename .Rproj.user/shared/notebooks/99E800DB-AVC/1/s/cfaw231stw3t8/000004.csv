@@ -1,0 +1,3 @@
+"0","ggplot(fumeur, aes(x = Fumeur, y = Fréquence, fill = AVC)) +"
+"0","        geom_bar(stat = ""identity"") +"
+"0","        ggtitle(""Fumeur ou non en fonction des chances de faire un AVC"") + theme(plot.title = element_text(hjust = 0.5))"

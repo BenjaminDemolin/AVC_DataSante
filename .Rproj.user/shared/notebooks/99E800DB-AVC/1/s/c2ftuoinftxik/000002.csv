@@ -1,0 +1,3 @@
+"0","type_travail <- as.data.frame(table(data_format$work_type, data_format$stroke))"
+"0","colnames(type_travail) <- c('Type_travail','AVC','Fréquence')"
+"0","head(type_travail)"

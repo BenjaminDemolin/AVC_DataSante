@@ -1,0 +1,5 @@
+"0",""
+"0","ggplot(avc1, aes(x=bmi)) +"
+"0","  geom_histogram(aes(y =..density..),position=""identity"", alpha=0.2,col=""#00AFBB"", fill=""#00AFBB"", breaks=seq(10, 100, by = 10) )+"
+"0","  geom_density(col = 2) + "
+"0","  ggtitle(""Histogramme des IMC des AVCs"") + theme(plot.title = element_text(hjust = 0.5))"
