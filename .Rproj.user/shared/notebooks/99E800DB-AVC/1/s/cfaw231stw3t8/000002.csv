@@ -1,3 +1,0 @@
-"0","fumeur <- as.data.frame(table(data_format$smoking_status, data_format$stroke))"
-"0","colnames(fumeur) <- c('Fumeur','AVC','Fréquence')"
-"0","head(fumeur)"

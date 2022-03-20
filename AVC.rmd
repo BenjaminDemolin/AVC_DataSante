@@ -2,12 +2,21 @@
 title: "AVC"
 output: html_notebook
 ---
-
+# Librairies
 ```{r}
 library(ggplot2)
+library(corrplot)
+library(kernlab)
+library(dplyr) 
+library(ade4)
 ```
 
+```{r}
+#setwd("~/Documents/IMT Atlantique/2A/S4B1/H - Analyse des données de santé - épidémiologie et aide à la décision/Stroke") ### chemin a changer ici
+#getwd()
+```
 
+# Analyse du jeu donnée
 ```{r}
 data <- read.csv("healthcare-dataset-stroke-data.csv", header=TRUE, sep=",")
 head(data)
@@ -17,162 +26,645 @@ str(data)
 data_format <- data
 str(data_format)
 nrow(data_format)
-
+# supprime id
+data_format<- data_format[,-c(1)]
+# conversion de bmi chr en num
 data_format$bmi <- suppressWarnings(as.numeric(data_format$bmi))
+# supprime le cas ou genre = other (une fois)
+data_format<-data_format[!(data_format$gender=="Other"),]
+data_format<-data_format[!(data_format$smoking_status=="Unknown"),]
+# assemble deux facteur d'un attribut en un (pas assez nombreux pour deux)
+data_format$work_type[data_format$work_type == "children" | data_format$work_type == "Never_worked"] <- "never_worked" 
+# conversion chr en facteur
 data_format <- as.data.frame(unclass(data_format), stringsAsFactors = TRUE)
+# supprime les na
 data_format <- na.omit(data_format)
-data_format$stroke <- as.factor(data_format$stroke)
+# les binaires (hypertension, heart_disease et stroke) en facteur
+data_format$hypertension <- factor(as.factor(data_format$hypertension),labels=c("htN","htP"))
+data_format$heart_disease <- factor(as.factor(data_format$heart_disease),labels=c("hdN","hdP"))
+data_format$stroke <- factor(as.factor(data_format$stroke),labels=c("avcN","avcP"))
+# change les labels qui ne sont pas utilisables en R
+data_format$work_type <- factor(as.factor(data_format$work_type),labels=c("never_worked","govt_job","private","self_employed"))
+data_format$smoking_status <- factor(as.factor(data_format$smoking_status),labels=c("formerly","never","smokes"))
+
 str(data_format)
 nrow(data_format)
-```
 
+
+```
+## Variable - Age
 ```{r}
+# Variable - Age
+# Cree un data set avec AVc = 0 et un autre = 1
 avc0 <- subset(data_format, stroke == 0)
 avc1 <- subset(data_format, stroke == 1)
 
+# Plot hist age avc = 0
 ggplot(avc0, aes(x=age)) +
   geom_histogram(aes(y =..density..),position="identity", alpha=0.2,col="#00AFBB", fill="#00AFBB", breaks=seq(0, 85, by = 5) )+
   geom_density(col = 2) + 
   ggtitle("Histogramme des âges des non AVCs") + theme(plot.title = element_text(hjust = 0.5))
 
+# Plot hist age avc = 1
 ggplot(avc1, aes(x=age)) +
   geom_histogram(aes(y =..density..),position="identity", alpha=0.2,col="#00AFBB", fill="#00AFBB", breaks=seq(0, 85, by = 5) )+
   geom_density(col = 2) + 
   ggtitle("Histogramme des âges des AVCs") + theme(plot.title = element_text(hjust = 0.5))
 
+# Plot hist et densité age avc 
 ggplot(data_format, aes(x=age, color =stroke, fill = stroke)) +
    geom_histogram(aes(y =..density..),position="identity", alpha=0.2, breaks=seq(0, 85, by = 5) )+
   geom_density(alpha=0.2) + 
   ggtitle("Histogramme des âges en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
 
+# boxPlot age
 ggplot(data_format, aes(x=stroke, y=age, color=stroke)) + 
   geom_boxplot() + 
   ggtitle("Boxplot des âges en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
 ```
+
 ```{r}
+# Regroupement selon plusieurs groupes d'âges
+
+table(data_format$stroke, data_format$age)
+data_format$ageQ <- cut(data_format$age, 
+                         breaks = c(-Inf
+                                    ,29,49,64
+                                    , Inf), 
+                         
+                         labels = c("inf_30"
+                                    ,"31_50","51_65","65_inf"
+                                    ),
+                         right = FALSE)
+
+
+stroke_age <- as.data.frame(table(data_format$stroke, data_format$ageQ))
+stroke_age
+
+# conversion de ageQ chr en num
+data_format$ageQ <- suppressWarnings(as.factor(data_format$ageQ))
+
+# dataframe de classe d'age en fonction d'avc
+ageQ <- as.data.frame(table(data_format$ageQ, data_format$stroke))
+colnames(ageQ) <- c('Classe_age','AVC','Fréquence')
+
+ggplot(ageQ, aes(x = Classe_age, y = Fréquence, fill = AVC)) +
+        geom_bar(stat = "identity") + 
+        ggtitle("Classe d'age en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0)
+
+```
+
+
+## Variable - Genre
+```{r}
+# Variable - Genre
+# dataframe de genre en fonction d'avc
 gender <- as.data.frame(table(data_format$gender, data_format$stroke))
 colnames(gender) <- c('Genre','AVC','Fréquence')
 head(gender)
+
+# calcul pourcentage avc par genre
+femme_avc <- (gender$Fréquence[gender$Genre =="Female" & gender$AVC == "avcP"] / gender$Fréquence[gender$Genre =="Female" & gender$AVC == "avcN"])*100
+homme_avc <- (gender$Fréquence[gender$Genre =="Male" & gender$AVC == "avcP"] / gender$Fréquence[gender$Genre =="Male" & gender$AVC == "avcN"])*100
+print(paste("Pourcentage de femme AVC : " ,round(femme_avc,2),"%"))
+print(paste("Pourcentage de homme AVC : " ,round(homme_avc,2),"%"))
+
+# plot hist genre
 ggplot(gender, aes(x = Genre, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") + 
-        ggtitle("Genre en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
-
-
+        ggtitle("Genre en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0)
 ```
 
-
+## Variable - Hypertension
 ```{r}
+# Variable - Hypertension
+# dataframe de hypertension en fonction d'avc
 hypertension <- as.data.frame(table(data_format$hypertension, data_format$stroke))
 colnames(hypertension) <- c('Hypertension','AVC','Fréquence')
 head(hypertension)
+
+# calcul pourcentage avc par hypertension
+hypertention0_avc <- (hypertension$Fréquence[hypertension$Hypertension == "htN" & hypertension$AVC == "avcP"] / hypertension$Fréquence[hypertension$Hypertension == "htN" & hypertension$AVC == "avcN"])*100
+hypertention1_avc <- (hypertension$Fréquence[hypertension$Hypertension == "htP" & hypertension$AVC == "avcP"] / hypertension$Fréquence[hypertension$Hypertension == "htP" & hypertension$AVC == "avcN"])*100
+print(paste("Pourcentage de hypertension 0 AVC : " ,round(hypertention0_avc,2),"%"))
+print(paste("Pourcentage de hypertension 1 AVC : " ,round(hypertention1_avc,2),"%"))
+
+# plot hist hypertension
 ggplot(hypertension, aes(x = Hypertension, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") +
-        ggtitle("Hypertension en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
+        ggtitle("Hypertension en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0)
 ```
-
+## Variable - Maladie cardiaque
 ```{r}
+# Variable - Maladie cardiaque
+# dataframe de Maladie cardiaque en fonction d'avc
 maladie_cardiaque <- as.data.frame(table(data_format$heart_disease, data_format$stroke))
 colnames(maladie_cardiaque) <- c('Maladie_cardiaque','AVC','Fréquence')
 head(maladie_cardiaque)
+
+# calcul pourcentage avc par Maladie cardiaque
+maladie_cardiaque0 <- (maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdN" & maladie_cardiaque$AVC == "avcP"] / maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdN" & maladie_cardiaque$AVC == "avcN"])*100
+maladie_cardiaque1 <- (maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdP" & maladie_cardiaque$AVC == "avcP"] / maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdP" & maladie_cardiaque$AVC == "avcN"])*100
+print(paste("Pourcentage de maladie cardiaque 0 AVC : " ,round(maladie_cardiaque0,2),"%"))
+print(paste("Pourcentage de maladie cardiaque 1 AVC : " ,round(maladie_cardiaque1,2),"%"))
+
+# plot hist Maladie cardiaque
 ggplot(maladie_cardiaque, aes(x = Maladie_cardiaque, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") +
-        ggtitle("Maladie cardiaque en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
+        ggtitle("Maladie cardiaque en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0)
 ```
-
+## Variable - Mariage
 ```{r}
+# Variable - Mariage
+# dataframe de Mariage en fonction d'avc
 mariage <- as.data.frame(table(data_format$ever_married, data_format$stroke))
 colnames(mariage) <- c('Mariage','AVC','Fréquence')
 head(mariage)
+
+# calcul pourcentage avc par Mariage
+mariage_no <- (mariage$Fréquence[mariage$Mariage =="No" & mariage$AVC == "avcP"] / mariage$Fréquence[mariage$Mariage =="No" & mariage$AVC == "avcN"])*100
+mariage_yes <- (mariage$Fréquence[mariage$Mariage =="Yes" & mariage$AVC == "avcP"] / mariage$Fréquence[mariage$Mariage =="Yes" & mariage$AVC == "avcN"])*100
+print(paste("Pourcentage de pas marié AVC : " ,round(mariage_no,2),"%"))
+print(paste("Pourcentage de marié AVC : " ,round(mariage_yes,2),"%"))
+
+# plot hist Mariage
 ggplot(mariage, aes(x = Mariage, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") +
-        ggtitle("Ayant eu un mariage en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
+        ggtitle("Ayant eu un mariage en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0)
 ```
-
+## Variable - Travail
 ```{r}
+# Variable - Travail
+# dataframe de Travail en fonction d'avc
 type_travail <- as.data.frame(table(data_format$work_type, data_format$stroke))
 colnames(type_travail) <- c('Type_travail','AVC','Fréquence')
 head(type_travail)
+
+# calcul pourcentage avc par Travail
+enfant_avc <- (type_travail$Fréquence[type_travail$Type_travail =="children" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="children" & type_travail$AVC == "avcN"])*100
+
+gouvernement_job_avc <- (type_travail$Fréquence[type_travail$Type_travail =="govt_job" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="govt_job" & type_travail$AVC == "avcN"])*100
+
+pas_travail_avc <- (type_travail$Fréquence[type_travail$Type_travail =="never_worked" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="never_worked" & type_travail$AVC == "avcN"])*100
+
+prive_avc <- (type_travail$Fréquence[type_travail$Type_travail =="private" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="private" & type_travail$AVC == "avcN"])*100
+
+independant_avc <- (type_travail$Fréquence[type_travail$Type_travail =="self_employed" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="self_employed" & type_travail$AVC == "avcN"])*100
+
+print(paste("Pourcentage de enfant AVC : " ,round(enfant_avc,2),"%"))
+print(paste("Pourcentage de job gouvernement AVC : " ,round(gouvernement_job_avc,2),"%"))
+print(paste("Pourcentage de pas de travail AVC : " ,round(pas_travail_avc,2),"%"))
+print(paste("Pourcentage de job privé AVC : " ,round(prive_avc,2),"%"))
+print(paste("Pourcentage de indépendant AVC : " ,round(independant_avc,2),"%"))
+
+# plot hist Travail
 ggplot(type_travail, aes(x = Type_travail, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") +
-        ggtitle("Type de travail en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
+        ggtitle("Type de travail en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0)
 ```
-
+## Variable - Résidence
 ```{r}
+# Variable - Résidence
+# dataframe de Résidence en fonction d'avc
 type_residence <- as.data.frame(table(data_format$Residence_type, data_format$stroke))
 colnames(type_residence) <- c('Type_residence','AVC','Fréquence')
 head(type_residence)
+
+# calcul pourcentage avc par Résidence
+rural_avc <- (type_residence$Fréquence[type_residence$Type_residence =="Rural" & type_residence$AVC == "avcP"] / type_residence$Fréquence[type_residence$Type_residence =="Rural" & type_residence$AVC == "avcN"])*100
+urbain_avc <- (type_residence$Fréquence[type_residence$Type_residence =="Urban" & type_residence$AVC == "avcP"] / type_residence$Fréquence[type_residence$Type_residence =="Urban" & type_residence$AVC == "avcN"])*100
+print(paste("Pourcentage de rural AVC : " ,round(rural_avc,2),"%"))
+print(paste("Pourcentage de urbain AVC : " ,round(urbain_avc),"%"))
+
+# plot hist Résidence
 ggplot(type_residence, aes(x = Type_residence, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") +
-        ggtitle("Type de résidence en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
+        ggtitle("Type de résidence en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0)
 ```
-
+## Variable - Niveau glucose
 ```{r}
+# Variable - Niveau glucose
 min(avc0$avg_glucose_level)
 max(avc0$avg_glucose_level)
 min(avc1$avg_glucose_level)
 max(avc1$avg_glucose_level)
 
-
+# Plot hist avg_glucose_level avc = 0
 ggplot(avc0, aes(x=avg_glucose_level)) +
   geom_histogram(aes(y =..density..),position="identity", alpha=0.2,col="#00AFBB", fill="#00AFBB", breaks=seq(55, 275, by = 10) )+
   geom_density(col = 2) + 
   ggtitle("Histogramme des niveaux de glucose des non AVCs") + theme(plot.title = element_text(hjust = 0.5))
 
+# Plot hist avg_glucose_level avc = 1
 ggplot(avc1, aes(x=avg_glucose_level)) +
   geom_histogram(aes(y =..density..),position="identity", alpha=0.2,col="#00AFBB", fill="#00AFBB", breaks=seq(55, 275, by = 10) )+
   geom_density(col = 2) + 
   ggtitle("Histogramme des niveaux de glucose des AVCs") + theme(plot.title = element_text(hjust = 0.5))
 
+# Plot hist et densité avg_glucose_level avc 
 ggplot(data_format, aes(x=avg_glucose_level, color =stroke, fill = stroke)) +
    geom_histogram(aes(y =..density..),position="identity", alpha=0.2, breaks=seq(55, 275, by = 10) )+
   geom_density(alpha=0.2) + 
   ggtitle("Histogramme des niveaux de glucose en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
 
+# boxPlot avg_glucose_level
 ggplot(data_format, aes(x=stroke, y=avg_glucose_level, color=stroke)) + 
   geom_boxplot() + 
   ggtitle("Boxplot des niveaux de glucose en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
+# Regroupement selon les niveaux de glucose
+summary(data_format$avg_glucose_level)
+data_format$glucoseQ <- cut(data_format$avg_glucose_level, 
+                         breaks = c(-Inf
+                                    ,69, 99,125
+                                    , Inf), 
+                         
+                         labels = c("inf_69", "70_100"
+                                    ,"101_126","127_inf"
+                                    ),
+                         right = FALSE)
+
+stroke_glc <- as.data.frame(table(data_format$stroke, data_format$glucoseQ))
+stroke_glc
+
+# conversion de glucoseQ chr en num
+data_format$glucoseQ <- suppressWarnings(as.factor(data_format$glucoseQ))
+
+
+# dataframe de classe glucose en fonction d'avc
+glucoseQ <- as.data.frame(table(data_format$glucoseQ, data_format$stroke))
+colnames(glucoseQ) <- c('Classe_glucose','AVC','Fréquence')
+
+
+ggplot(glucoseQ, aes(x = Classe_glucose, y = Fréquence, fill = AVC)) +
+        geom_bar(stat = "identity") + 
+        ggtitle("Classe de niveau de glucose en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0) 
+```
+
+
+
+## Variable - IMC
+```{r}
+# Variable - IMC
 min(avc0$bmi)
 max(avc0$bmi)
 min(avc1$bmi)
 max(avc1$bmi)
+
+# Plot hist IMC avc = 0
 ggplot(avc0, aes(x=bmi)) +
-  geom_histogram(aes(y =..density..),position="identity", alpha=0.2,col="#00AFBB", fill="#00AFBB", breaks=seq(10, 100, by = 10) )+
+  geom_histogram(aes(y =..density..),position="identity", alpha=0.2,col="#00AFBB", fill="#00AFBB", breaks=seq(10, 100, by = 5) )+
   geom_density(col = 2) + 
   ggtitle("Histogramme des IMC des non AVCs") + theme(plot.title = element_text(hjust = 0.5))
 
+# Plot hist IMC avc = 1
 ggplot(avc1, aes(x=bmi)) +
-  geom_histogram(aes(y =..density..),position="identity", alpha=0.2,col="#00AFBB", fill="#00AFBB", breaks=seq(10, 100, by = 10) )+
+  geom_histogram(aes(y =..density..),position="identity", alpha=0.2,col="#00AFBB", fill="#00AFBB", breaks=seq(10, 100, by = 5) )+
   geom_density(col = 2) + 
   ggtitle("Histogramme des IMC des AVCs") + theme(plot.title = element_text(hjust = 0.5))
 
+# Plot hist et densité IMC avc 
 ggplot(data_format, aes(x=bmi, color =stroke, fill = stroke)) +
-   geom_histogram(aes(y =..density..),position="identity", alpha=0.2, breaks=seq(10, 100, by = 10) )+
+   geom_histogram(aes(y =..density..),position="identity", alpha=0.2, breaks=seq(10, 100, by = 5) )+
   geom_density(alpha=0.2) + 
   ggtitle("Histogramme des IMC en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
 
+# boxPlot IMC
 ggplot(data_format, aes(x=stroke, y=bmi, color=stroke)) + 
   geom_boxplot() + 
   ggtitle("Boxplot des IMC en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
-
 ```
 
 ```{r}
+# Regroupement selon les groupes d'IMC
+
+summary(data_format$bmi)
+data_format$bmiQ <- cut(data_format$bmi, 
+                         breaks = c(-Inf
+                                    ,24.9, 29.9, 34.9
+                                    , Inf), 
+                         
+                         labels = c("inf_25"
+                                    ,"25_30","30_35",
+                                    "35_inf"
+                                    ),
+                         right = FALSE)
+
+stroke_bmi <- as.data.frame(table(data_format$stroke, data_format$bmiQ))
+stroke_bmi
+
+# conversion de bmiQ chr en num
+data_format$bmiQ <- suppressWarnings(as.factor(data_format$bmiQ))
+data_format$bmiQ
+
+# dataframe de classe imc en fonction d'avc
+bmiQ <- as.data.frame(table(data_format$bmiQ, data_format$stroke))
+colnames(bmiQ) <- c('Classe_IMC','AVC','Fréquence')
+head(bmiQ)
+
+ggplot(bmiQ, aes(x = Classe_IMC, y = Fréquence, fill = AVC)) +
+        geom_bar(stat = "identity") + 
+        ggtitle("Classe de niveau d'IMC en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0)
+```
+
+
+## Variable - Fumeur
+```{r}
+# Variable - Fumeur
+# dataframe de Fumeur en fonction d'avc
 fumeur <- as.data.frame(table(data_format$smoking_status, data_format$stroke))
-colnames(fumeur) <- c('Fumeur','AVC','Fréquence')
+colnames(fumeur) <- c('Statut_fumeur','AVC','Fréquence')
 head(fumeur)
-ggplot(fumeur, aes(x = Fumeur, y = Fréquence, fill = AVC)) +
+
+# calcul pourcentage avc par Fumeur
+ancien_fumeur_avc <- (fumeur$Fréquence[fumeur$Statut_fumeur =="formerly" & fumeur$AVC == "avcP"] / fumeur$Fréquence[fumeur$Statut_fumeur =="formerly" & fumeur$AVC == "avcN"])*100
+non_fumeur_avc <- (fumeur$Fréquence[fumeur$Statut_fumeur =="never" & fumeur$AVC == "avcP"] / fumeur$Fréquence[fumeur$Statut_fumeur =="never" & fumeur$AVC == "avcN"])*100
+fumeur_avc <- (fumeur$Fréquence[fumeur$Statut_fumeur =="smokes" & fumeur$AVC == "avcP"] / fumeur$Fréquence[fumeur$Statut_fumeur =="smokes" & fumeur$AVC == "avcN"])*100
+print(paste("Pourcentage de ancien fumeur AVC : " ,round(ancien_fumeur_avc,2),"%"))
+print(paste("Pourcentage de non fumeur AVC : " ,round(non_fumeur_avc,2),"%"))
+print(paste("Pourcentage de fumeur AVC : " ,round(fumeur_avc,2),"%"))
+
+# plot hist Fumeur
+ggplot(fumeur, aes(x = Statut_fumeur, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") +
-        ggtitle("Fumeur ou non en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
+        ggtitle("Statut fumeur en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
+        geom_text(aes(label = Fréquence), vjust = 0)
 ```
 
+
+## Variable - AVC
 ```{r}
+# Variable - AVC
+# dataframe de AVC
 avc <- as.data.frame(table( data_format$stroke))
 colnames(avc) <- c('AVC','Fréquence')
 head(avc)
+
+# plot hist genre
 ggplot(avc, aes(x = AVC, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") +
-        ggtitle("Nombre d'AVC du jeu de donnée") + theme(plot.title = element_text(hjust = 0.5), legend.position="none")
+        ggtitle("Nombre d'AVC du jeu de donnée") + theme(plot.title = element_text(hjust = 0.5), legend.position="none")+
+        geom_text(aes(label = Fréquence), vjust = 0)
 ```
+
+
+## Corrélation
+```{r}
+# garde attr quanti
+data_cor<- select(data_format,age,avg_glucose_level,bmi)
+# calcul corrélation
+M<-cor(data_cor)
+# plot corrélation
+corrplot(M, method="circle")
+corrplot(M, method="color")
+corrplot(M, method="number")
+```
+
+
+## Variables - Corrélation
+```{r}
+# plot IMC en fonction de age
+ggplot(data_format, aes(x = age, y = bmi, colour = stroke)) + 
+  geom_point(alpha=0.5)+
+  ggtitle("IMC en fonction de l'âge et des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
+
+# plot niveau de glucose en fonction de age
+ggplot(data_format, aes(x = age, y = avg_glucose_level, colour = stroke)) + 
+  geom_point(alpha=0.5)+
+  ggtitle("Niveau de glucose en fonction de l'âge et des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+
+## Variables - Pourcentage AVC 
+```{r}
+print(paste("----------------------------------------------Genre------------------------------------------------- " ))
+print(paste("Pourcentage de femme AVC : " ,round(femme_avc,2),"%"))
+print(paste("Pourcentage de homme AVC : " ,round(homme_avc,2),"%"))
+print(paste("----------------------------------------------Hypertension------------------------------------------------- " ))
+print(paste("Pourcentage de hypertension AVC : " ,round(hypertention0_avc,2),"%"))
+print(paste("Pourcentage de hypertension AVC : " ,round(hypertention1_avc,2),"%"))
+print(paste("----------------------------------------------Maladie cardiaque------------------------------------------------- " ))
+print(paste("Pourcentage de maladie cardiaque AVC : " ,round(maladie_cardiaque0,2),"%"))
+print(paste("Pourcentage de maladie cardiaque AVC : " ,round(maladie_cardiaque1,2),"%"))
+print(paste("----------------------------------------------Mariage------------------------------------------------- " ))
+print(paste("Pourcentage de pas marié AVC : " ,round(mariage_no,2),"%"))
+print(paste("Pourcentage de marié AVC : " ,round(mariage_yes,2),"%"))
+print(paste("----------------------------------------------Type Job------------------------------------------------- " ))
+print(paste("Pourcentage de enfant AVC : " ,round(enfant_avc,2),"%"))
+print(paste("Pourcentage de job gouvernement AVC : " ,round(gouvernement_job_avc,2),"%"))
+print(paste("Pourcentage de pas de travail AVC : " ,round(pas_travail_avc,2),"%"))
+print(paste("Pourcentage de job privé AVC : " ,round(prive_avc,2),"%"))
+print(paste("Pourcentage de indépendant AVC : " ,round(independant_avc,2),"%"))
+print(paste("----------------------------------------------Type résidence------------------------------------------------- " ))
+print(paste("Pourcentage de rural AVC : " ,round(rural_avc,2),"%"))
+print(paste("Pourcentage de urbain AVC : " ,round(urbain_avc),"%"))
+print(paste("----------------------------------------------Status fumeur------------------------------------------------- " ))
+print(paste("Pourcentage de ancien fumeur AVC : " ,round(ancien_fumeur_avc,2),"%"))
+print(paste("Pourcentage de non fumeur AVC : " ,round(non_fumeur_avc,2),"%"))
+print(paste("Pourcentage de fumeur AVC : " ,round(fumeur_avc,2),"%"))
+```
+
+
+
+
+
+## Analyses bivariées avec la variable cible AVC.
+
+Entre AVC et les variables quantitatives.
+```{r}
+# avec age
+var.test(age~stroke,data=data_format) # sous reserve d'hypothese de normalite des distributions des ages selon absence/presence d'AVC
+t.test(age~stroke,var.equal=T,data=data_format)
+# difference signifcative ### => le risque augmente avec l'age
+
+# avec NivGluc
+var.test(avg_glucose_level~stroke,data=data_format) 
+t.test(avg_glucose_level~stroke,var.equal=T,data=data_format)
+# difference signifcative ####  => le risque augmente avec le niveau de glucose
+
+# avec IMC
+var.test(bmi~stroke,data=data_format) 
+t.test(bmi~stroke,var.equal=T,data=data_format)
+# difference non signifcative (discutable)  => le risque n'augmente pas significativement avec l'IMC
+```
+### Cf. Ligne 239
+```{r}
+
+
+```
+
+
+
+Entre stroke et les variables qualitatives.
+```{r}
+# Genre
+t <- chisq.test(data_format$gender,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals #===> les hommes ont plus de chance de faire un AVC que les femmes
+
+# Maladie cardiaque
+t <- chisq.test(data_format$heart_disease,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals # les maladies cardiaques ont plus de chance d'etre associees avec la survenue d'un AVC
+
+# Mariage
+t <- chisq.test(data_format$ever_married,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals # => les personnes ayant deja ete mariees ont plus de chance de faire un AVC
+
+# Travail
+t <- chisq.test(data_format$work_type,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals # => les personnes self_employed ont plus de chance de faire un AVC
+
+# Residence
+t <- chisq.test(data_format$Residence_type,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals #==> les personnes vivant en milieu urbain ont plus de chance de faire un AVC
+
+# Fumeur
+t <- chisq.test(data_format$smoking_status,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals # les personnes ayant deja fume ont plus de chance de faire un AVC
+```
+
+# ANALYSE MULTIVARIEE
+
+# On peut realiser une analyse multivariee des variables pour identifier les effets combinees des variables explicatives sur la variable cible
+# ==> AFCM (dans notre cas car on a des variables qualitatives, sur des variables complètement quantitatives : ACP)
+```{r}
+# selection des seules variables qualitatives pour l'AFCM
+avcQ = data_format[,-c(2,8,9)]
+summary(avcQ)
+```
+```{r}
+quali <- avcQ[,-8]
+var_sup <- avcQ[,"stroke"]
+acm <- dudi.acm(quali, scannf = FALSE, nf = 5)
+## Variable supplmentaire : variable cible Coro
+acm$supv <- supcol(acm, dudi.acm(var_sup, scannf = FALSE, nf = 5)$tab)
+explor(acm)
+```
+
+### CREATION D'UNE VARIABLE MOTIVEE PAR L'ETUDE EXPLORATOIRE DESCRIPTIVE
+```{r}
+# creation de la variable interaction entre Sexe et Age
+ageHeart=avcQ$ageQ:avcQ$heart_disease
+table(ageHeart,avcQ[,"stroke"])
+
+# test de dependence avec la variable cible
+t <- chisq.test(ageHeart,avcQ$stroke)
+t$residuals
+#surtout l'age qui a un impact
+
+avcQ2=data.frame(avcQ,"ageHeart"=ageHeart)
+summary(avcQ2)
+quali2 <- avcQ2[,-c(1,9,10)]
+var_sup2 <- avcQ2[,c("ageQ","stroke","heart_disease")]
+acm2 <- dudi.acm(quali2, scannf = FALSE, nf = 5)
+acm2$supv <- supcol(acm2, dudi.acm(var_sup2, scannf = FALSE, nf = 5)$tab)
+
+explor(acm2)
+```
+
+
+
+
+
+
+
+
+
+
+
+# IA?
+
+```{r}
+### APPRENTISSAGE SUPERVISE
+
+# objectif double : 
+## Prédire efficacement la présence (ou l’absence) d’un AVC (variable ‘stroke’)
+## à partir de nouvelles observations sur les variables explicatives
+
+## Comprendre les facteurs influençant la présence d’une maladie coronarienne
+
+library(caret)
+# separation echantillons apprentissage / test
+set.seed(42)
+df_sampling_index <- createDataPartition(data_format$stroke, times = 1, p = 0.7, list = FALSE)
+
+df_training <- data_format_test[df_sampling_index, ]
+df_testing <-  data_format_test[-df_sampling_index, ]
+
+prop.table(table(df_training$stroke))
+prop.table(table(df_testing$stroke))
+
+
+### PHASE D APRENTISSAGE
+
+## 1) On lance les algorithmes avec les parametres par defaut
+## 2) On optimise les parametres de complexite par CV V-5
+
+### on definit le cadre general de l'optimisation des parametres de complexite dans la fonction trainControl (a utiliser dans la fonciton train du package caret)
+df_control <- trainControl(method="cv", #validation croisee
+                           number = 5,  # 5 folds (selon le nombre de donnees on peut mettre plus)
+                           classProbs = TRUE,
+                           summaryFunction = twoClassSummary) # on est dans un cas de classification binaire
+
+```
+
+```{r}
+#####    REGRESSION LOGISTIQUE BINAIRE
+
+# 1) apprentissage sur l'ensemble des variables ie sans optimisation => fonction glm
+
+model_glm <- glm(stroke ~., data=df_training, family=binomial(link="logit")) 
+summary(model_glm)
+
+# prediction sur l'échantillon test
+prediction_glm <- predict(model_glm, df_testing, type="response")
+prediction_glm <- ifelse(prediction_glm<0.5,"avcN_pred","avcP_pred")
+
+# matrice de confusion
+matconfus_glm <- table(prediction_glm, df_testing$stroke)
+matconfus_glm
+
+# calcul de l'erreur de prediction
+err_glm <- 1-(sum(diag(matconfus_glm)) / sum(matconfus_glm))
+err_glm*100
+```
+
+```{r}
+# 2) on selectionne les variables à conserver dans le model final grace au critere de l'AIC (par forward selection)
+set.seed(42)
+model_glm_tuned = train(stroke ~.,
+                df_training,
+                method = "glmStepAIC", ## selection forward par minimisation de l'AIC
+                metric="ROC",
+                trControl = df_control)
+
+summary(model_glm_tuned$finalModel) # le model final optimise ne contient plus que 8 variables
+
+# prediction sur l'échantillon test
+#prediction_glm_tuned <- predict(model_glm_tuned, df_testing, type="response")
+prediction_glm_tuned <- predict(model_glm_tuned, df_testing)#, type="response")
+
+# matrice de confusion entre prediction et relaite
+confusionMatrix(prediction_glm_tuned, df_testing$stroke)
+
+# ou calculable manuellement
+matconfus_glm_tuned <- table(prediction_glm_tuned, df_testing$stroke)
+matconfus_glm_tuned
+
+# calcul de l'erreur de prediction
+err_glm_tuned <- 1-(sum(diag(matconfus_glm_tuned)) / sum(matconfus_glm_tuned))
+err_glm_tuned
+```
+

@@ -1,3 +1,0 @@
-"0","avc <- as.data.frame(table( data_format$stroke))"
-"0","colnames(avc) <- c('AVC','Fréquence')"
-"0","head(avc)"

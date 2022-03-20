@@ -1,3 +1,0 @@
-"0","mariage <- as.data.frame(table(data_format$ever_married, data_format$stroke))"
-"0","colnames(mariage) <- c('Mariage','AVC','Fréquence')"
-"0","head(mariage)"

@@ -1,3 +1,0 @@
-"0","ggplot(avc, aes(x = AVC, y = Fréquence, fill = AVC)) +"
-"0","        geom_bar(stat = ""identity"") +"
-"0","        ggtitle(""Nombre d'AVC du jeu de donnée"") + theme(plot.title = element_text(hjust = 0.5), legend.position=""none"")"

@@ -1,2 +1,0 @@
-"0","data <- read.csv(""healthcare-dataset-stroke-data.csv"", header=TRUE, sep="","")"
-"0","head(data)"

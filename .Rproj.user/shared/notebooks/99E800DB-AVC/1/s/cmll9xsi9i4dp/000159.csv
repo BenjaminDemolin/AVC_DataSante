@@ -1,4 +1,0 @@
-"0",""
-"0","ggplot(data_format, aes(x=stroke, y=age, color=stroke)) + "
-"0","  geom_boxplot() + "
-"0","  ggtitle(""Boxplot des âges en fonction des chances de faire un AVC"") + theme(plot.title = element_text(hjust = 0.5))"

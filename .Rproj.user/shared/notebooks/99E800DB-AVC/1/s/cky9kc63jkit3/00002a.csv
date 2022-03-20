@@ -1,5 +1,0 @@
-"0",""
-"0","ggplot(data_format, aes(x=avg_glucose_level, color =stroke, fill = stroke)) +"
-"0","   geom_histogram(aes(y =..density..),position=""identity"", alpha=0.2, breaks=seq(55, 275, by = 10) )+"
-"0","  geom_density(alpha=0.2) + "
-"0","  ggtitle(""Histogramme des niveaux de glucose en fonction des chances de faire un AVC"") + theme(plot.title = element_text(hjust = 0.5))"
