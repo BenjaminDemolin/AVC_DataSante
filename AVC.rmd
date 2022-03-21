@@ -9,6 +9,8 @@ library(corrplot)
 library(kernlab)
 library(dplyr) 
 library(ade4)
+library (ROCR)
+library(DescTools)
 ```
 
 ```{r}
@@ -600,8 +602,22 @@ library(caret)
 set.seed(42)
 df_sampling_index <- createDataPartition(data_format$stroke, times = 1, p = 0.7, list = FALSE)
 
-df_training <- data_format_test[df_sampling_index, ]
-df_testing <-  data_format_test[-df_sampling_index, ]
+df_training <- data_format[df_sampling_index, ]
+df_testing <-  data_format[-df_sampling_index, ]
+
+prop.table(table(df_training$stroke))
+prop.table(table(df_testing$stroke))
+
+#dataset balanced
+avcN <- data_format[data_format$stroke == "avcN",]
+avcP <- data_format[data_format$stroke == "avcP",]
+avcN_balanced <- data_format[sample(nrow(avcN),nrow(avcP)),]
+data_format_balanced <- rbind(avcN_balanced,avcP)
+
+df_sampling_index_balanced <- createDataPartition(data_format_balanced$stroke, times = 1, p = 0.7, list = FALSE)
+
+df_training_balanced <- data_format_balanced[df_sampling_index_balanced, ]
+df_testing_balanced <-  data_format_balanced[-df_sampling_index_balanced, ]
 
 prop.table(table(df_training$stroke))
 prop.table(table(df_testing$stroke))
@@ -640,6 +656,45 @@ matconfus_glm
 err_glm <- 1-(sum(diag(matconfus_glm)) / sum(matconfus_glm))
 err_glm*100
 ```
+```{r}
+# Recall-Precision curve     
+prediction_glm_PR <- predict(model_glm, df_testing, type="response")
+
+prediction_glm_RP <- prediction(prediction_glm_PR, df_testing$stroke)
+
+eval <- performance(prediction_glm_RP, "prec", "rec")
+plot(eval)
+```
+
+```{r}
+model_glm_balanced <- glm(stroke ~., data=df_training_balanced, family=binomial(link="logit")) 
+summary(model_glm_balanced)
+
+# prediction sur l'échantillon test
+prediction_glm_balanced <- predict(model_glm_balanced, df_testing_balanced, type="response")
+prediction_glm_balanced <- ifelse(prediction_glm_balanced<0.5,"avcN_pred","avcP_pred")
+
+# matrice de confusion
+matconfus_glm_balanced<- table(prediction_glm_balanced, df_testing_balanced$stroke)
+matconfus_glm_balanced
+
+# calcul de l'erreur de prediction
+err_glm_balanced <- 1-(sum(diag(matconfus_glm_balanced)) / sum(matconfus_glm_balanced))
+err_glm_balanced*100
+```
+```{r}
+library(DescTools)
+CohenKappa(matconfus_glm_balanced)
+
+# Recall-Precision curve     
+prediction_glm_balanced_PR <- predict(model_glm_balanced, df_testing_balanced, type="response")
+
+prediction_glm_balanced_RP <- prediction(prediction_glm_balanced_PR, df_testing_balanced$stroke)
+
+eval_balanced <- performance(prediction_glm_balanced_RP, "prec", "rec")
+plot(eval_balanced)
+```
+
 
 ```{r}
 # 2) on selectionne les variables à conserver dans le model final grace au critere de l'AIC (par forward selection)
