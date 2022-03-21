@@ -9,8 +9,14 @@ library(corrplot)
 library(kernlab)
 library(dplyr) 
 library(ade4)
-library (ROCR)
+library(ROCR)
+library(caret)
 library(DescTools)
+library(imbalance)
+library(rpart)
+library(e1071)
+library(randomForest)
+library(pROC)
 ```
 
 ```{r}
@@ -449,41 +455,7 @@ ggplot(data_format, aes(x = age, y = avg_glucose_level, colour = stroke)) +
 ```
 
 
-
-## Variables - Pourcentage AVC 
-```{r}
-print(paste("----------------------------------------------Genre------------------------------------------------- " ))
-print(paste("Pourcentage de femme AVC : " ,round(femme_avc,2),"%"))
-print(paste("Pourcentage de homme AVC : " ,round(homme_avc,2),"%"))
-print(paste("----------------------------------------------Hypertension------------------------------------------------- " ))
-print(paste("Pourcentage de hypertension AVC : " ,round(hypertention0_avc,2),"%"))
-print(paste("Pourcentage de hypertension AVC : " ,round(hypertention1_avc,2),"%"))
-print(paste("----------------------------------------------Maladie cardiaque------------------------------------------------- " ))
-print(paste("Pourcentage de maladie cardiaque AVC : " ,round(maladie_cardiaque0,2),"%"))
-print(paste("Pourcentage de maladie cardiaque AVC : " ,round(maladie_cardiaque1,2),"%"))
-print(paste("----------------------------------------------Mariage------------------------------------------------- " ))
-print(paste("Pourcentage de pas marié AVC : " ,round(mariage_no,2),"%"))
-print(paste("Pourcentage de marié AVC : " ,round(mariage_yes,2),"%"))
-print(paste("----------------------------------------------Type Job------------------------------------------------- " ))
-print(paste("Pourcentage de enfant AVC : " ,round(enfant_avc,2),"%"))
-print(paste("Pourcentage de job gouvernement AVC : " ,round(gouvernement_job_avc,2),"%"))
-print(paste("Pourcentage de pas de travail AVC : " ,round(pas_travail_avc,2),"%"))
-print(paste("Pourcentage de job privé AVC : " ,round(prive_avc,2),"%"))
-print(paste("Pourcentage de indépendant AVC : " ,round(independant_avc,2),"%"))
-print(paste("----------------------------------------------Type résidence------------------------------------------------- " ))
-print(paste("Pourcentage de rural AVC : " ,round(rural_avc,2),"%"))
-print(paste("Pourcentage de urbain AVC : " ,round(urbain_avc),"%"))
-print(paste("----------------------------------------------Status fumeur------------------------------------------------- " ))
-print(paste("Pourcentage de ancien fumeur AVC : " ,round(ancien_fumeur_avc,2),"%"))
-print(paste("Pourcentage de non fumeur AVC : " ,round(non_fumeur_avc,2),"%"))
-print(paste("Pourcentage de fumeur AVC : " ,round(fumeur_avc,2),"%"))
-```
-
-
-
-
-
-## Analyses bivariées avec la variable cible AVC.
+## Analyses avec la variable cible AVC.
 
 Entre AVC et les variables quantitatives.
 ```{r}
@@ -502,13 +474,6 @@ var.test(bmi~stroke,data=data_format)
 t.test(bmi~stroke,var.equal=T,data=data_format)
 # difference non signifcative (discutable)  => le risque n'augmente pas significativement avec l'IMC
 ```
-### Cf. Ligne 239
-```{r}
-
-
-```
-
-
 
 Entre stroke et les variables qualitatives.
 ```{r}
@@ -535,12 +500,22 @@ t$residuals #==> les personnes vivant en milieu urbain ont plus de chance de fai
 # Fumeur
 t <- chisq.test(data_format$smoking_status,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals # les personnes ayant deja fume ont plus de chance de faire un AVC
+
+# age
+t <- chisq.test(data_format$ageQ,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals # les personnes de plus de 65 ans ont plus de chance de faire un AVC
+
+# glucose
+t <- chisq.test(data_format$glucoseQ,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals # les personnes ayant un niveau de glucose supérieur a 127 ont plus de chance de faire un AVC
+
+# bmi
+t <- chisq.test(data_format$bmiQ,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals # les personnes ayant un imc entre 30 et 35 ont plus de chance de faire un AVC
 ```
 
 # ANALYSE MULTIVARIEE
 
-# On peut realiser une analyse multivariee des variables pour identifier les effets combinees des variables explicatives sur la variable cible
-# ==> AFCM (dans notre cas car on a des variables qualitatives, sur des variables complètement quantitatives : ACP)
 ```{r}
 # selection des seules variables qualitatives pour l'AFCM
 avcQ = data_format[,-c(2,8,9)]
@@ -552,10 +527,10 @@ var_sup <- avcQ[,"stroke"]
 acm <- dudi.acm(quali, scannf = FALSE, nf = 5)
 ## Variable supplmentaire : variable cible Coro
 acm$supv <- supcol(acm, dudi.acm(var_sup, scannf = FALSE, nf = 5)$tab)
-explor(acm)
+#explor(acm)
 ```
 
-### CREATION D'UNE VARIABLE MOTIVEE PAR L'ETUDE EXPLORATOIRE DESCRIPTIVE
+### Creation d'une variabme motivée par l'étude exploratoire descriptive
 ```{r}
 # creation de la variable interaction entre Sexe et Age
 ageHeart=avcQ$ageQ:avcQ$heart_disease
@@ -573,20 +548,43 @@ var_sup2 <- avcQ2[,c("ageQ","stroke","heart_disease")]
 acm2 <- dudi.acm(quali2, scannf = FALSE, nf = 5)
 acm2$supv <- supcol(acm2, dudi.acm(var_sup2, scannf = FALSE, nf = 5)$tab)
 
-explor(acm2)
+#explor(acm2)
+```
+# Equilibrage du jeu de données
+
+```{r}
+imbalanceRatio(as.data.frame(data_format), classAttr = "stroke")
+
+stroke_test <- data_format %>%
+mutate(
+    stroke = as.character(stroke),
+    across(where(is.factor), as.numeric),
+    stroke = factor(stroke)
+)
+
+stroke_oversampled <- oversample(as.data.frame(stroke_test), classAttr = "stroke", ratio = 1, method = "MWMOTE")
+
+str(stroke_oversampled)
+
+stroke_oversampled %>%
+group_by(stroke) %>%
+summarize(n = n()) %>%
+mutate(prop = round(n / sum(n), 2))
+```
+
+```{r}
+for ( i in 1:ncol(data_format)) { 
+  if(is.factor(data_format[,i])){
+    
+    stroke_oversampled[,i] <- factor(as.integer(stroke_oversampled[,i]),labels=c(levels(data_format[,i])))
+  }
+}
+str(stroke_oversampled)
 ```
 
 
 
-
-
-
-
-
-
-
-
-# IA?
+# Training/Test
 
 ```{r}
 ### APPRENTISSAGE SUPERVISE
@@ -597,27 +595,16 @@ explor(acm2)
 
 ## Comprendre les facteurs influençant la présence d’une maladie coronarienne
 
-library(caret)
+
+
+data_format_raw <- stroke_oversampled[-c(12,13,14)]
+
 # separation echantillons apprentissage / test
 set.seed(42)
-df_sampling_index <- createDataPartition(data_format$stroke, times = 1, p = 0.7, list = FALSE)
+df_sampling_index <- createDataPartition(data_format_raw$stroke, times = 1, p = 0.7, list = FALSE)
 
-df_training <- data_format[df_sampling_index, ]
-df_testing <-  data_format[-df_sampling_index, ]
-
-prop.table(table(df_training$stroke))
-prop.table(table(df_testing$stroke))
-
-#dataset balanced
-avcN <- data_format[data_format$stroke == "avcN",]
-avcP <- data_format[data_format$stroke == "avcP",]
-avcN_balanced <- data_format[sample(nrow(avcN),nrow(avcP)),]
-data_format_balanced <- rbind(avcN_balanced,avcP)
-
-df_sampling_index_balanced <- createDataPartition(data_format_balanced$stroke, times = 1, p = 0.7, list = FALSE)
-
-df_training_balanced <- data_format_balanced[df_sampling_index_balanced, ]
-df_testing_balanced <-  data_format_balanced[-df_sampling_index_balanced, ]
+df_training <- data_format_raw[df_sampling_index, ]
+df_testing <-  data_format_raw[-df_sampling_index, ]
 
 prop.table(table(df_training$stroke))
 prop.table(table(df_testing$stroke))
@@ -635,16 +622,17 @@ df_control <- trainControl(method="cv", #validation croisee
                            summaryFunction = twoClassSummary) # on est dans un cas de classification binaire
 
 ```
-
+# Entrainement des différents modèles
+## Regression logistique binaire
+### Sans optimisation
 ```{r}
-#####    REGRESSION LOGISTIQUE BINAIRE
 
-# 1) apprentissage sur l'ensemble des variables ie sans optimisation => fonction glm
+# apprentissage
 
 model_glm <- glm(stroke ~., data=df_training, family=binomial(link="logit")) 
 summary(model_glm)
 
-# prediction sur l'échantillon test
+# prediction 
 prediction_glm <- predict(model_glm, df_testing, type="response")
 prediction_glm <- ifelse(prediction_glm<0.5,"avcN_pred","avcP_pred")
 
@@ -652,52 +640,18 @@ prediction_glm <- ifelse(prediction_glm<0.5,"avcN_pred","avcP_pred")
 matconfus_glm <- table(prediction_glm, df_testing$stroke)
 matconfus_glm
 
+
 # calcul de l'erreur de prediction
 err_glm <- 1-(sum(diag(matconfus_glm)) / sum(matconfus_glm))
 err_glm*100
-```
-```{r}
-# Recall-Precision curve     
-prediction_glm_PR <- predict(model_glm, df_testing, type="response")
 
-prediction_glm_RP <- prediction(prediction_glm_PR, df_testing$stroke)
-
-eval <- performance(prediction_glm_RP, "prec", "rec")
-plot(eval)
+# kappa
+CohenKappa(matconfus_glm)
 ```
 
+### Avec optimisation
 ```{r}
-model_glm_balanced <- glm(stroke ~., data=df_training_balanced, family=binomial(link="logit")) 
-summary(model_glm_balanced)
-
-# prediction sur l'échantillon test
-prediction_glm_balanced <- predict(model_glm_balanced, df_testing_balanced, type="response")
-prediction_glm_balanced <- ifelse(prediction_glm_balanced<0.5,"avcN_pred","avcP_pred")
-
-# matrice de confusion
-matconfus_glm_balanced<- table(prediction_glm_balanced, df_testing_balanced$stroke)
-matconfus_glm_balanced
-
-# calcul de l'erreur de prediction
-err_glm_balanced <- 1-(sum(diag(matconfus_glm_balanced)) / sum(matconfus_glm_balanced))
-err_glm_balanced*100
-```
-```{r}
-library(DescTools)
-CohenKappa(matconfus_glm_balanced)
-
-# Recall-Precision curve     
-prediction_glm_balanced_PR <- predict(model_glm_balanced, df_testing_balanced, type="response")
-
-prediction_glm_balanced_RP <- prediction(prediction_glm_balanced_PR, df_testing_balanced$stroke)
-
-eval_balanced <- performance(prediction_glm_balanced_RP, "prec", "rec")
-plot(eval_balanced)
-```
-
-
-```{r}
-# 2) on selectionne les variables à conserver dans le model final grace au critere de l'AIC (par forward selection)
+# apprentissage et tuning
 set.seed(42)
 model_glm_tuned = train(stroke ~.,
                 df_training,
@@ -705,21 +659,303 @@ model_glm_tuned = train(stroke ~.,
                 metric="ROC",
                 trControl = df_control)
 
-summary(model_glm_tuned$finalModel) # le model final optimise ne contient plus que 8 variables
+summary(model_glm_tuned$finalModel)
 
-# prediction sur l'échantillon test
-#prediction_glm_tuned <- predict(model_glm_tuned, df_testing, type="response")
-prediction_glm_tuned <- predict(model_glm_tuned, df_testing)#, type="response")
+# prediction 
+prediction_glm_tuned <- predict(model_glm_tuned, df_testing)
 
-# matrice de confusion entre prediction et relaite
-confusionMatrix(prediction_glm_tuned, df_testing$stroke)
-
-# ou calculable manuellement
+# matrice de confusion
 matconfus_glm_tuned <- table(prediction_glm_tuned, df_testing$stroke)
 matconfus_glm_tuned
 
+
 # calcul de l'erreur de prediction
 err_glm_tuned <- 1-(sum(diag(matconfus_glm_tuned)) / sum(matconfus_glm_tuned))
-err_glm_tuned
+err_glm_tuned*100
+
+# kappa
+CohenKappa(matconfus_glm_tuned)
+
+```
+
+## K-NN
+### Sans optimisation
+### Avec optimisation
+```{r}
+# apprentissage et tuning
+set.seed(42)
+grid <- expand.grid(.k=seq(1,50,by=1))
+model_knn_tuned <- train(stroke ~.,
+                         data = df_training, 
+                         method = "knn", 
+                         metric = "ROC",
+                         preProcess = c('center', 'scale'),
+                         tuneGrid= grid,
+                         trControl = df_control)
+
+# affichage du modele
+model_knn_tuned$finalModel
+k = model_knn_tuned$results$k[model_knn_tuned$results$ROC == max(model_knn_tuned$results$ROC)]
+ggplot(model_knn_tuned)+geom_vline(xintercept = k,color ='red') # performance metric (ROC) en fonction des valeurs de C (le parametre a optimiser)
+
+# prediction 
+prediction_knn_tuned <- predict(model_knn_tuned, df_testing,type="prob")
+prediction_knn_tuned <- predict(model_knn_tuned, df_testing)#,type="prob")
+
+# matrice de confusion
+matconfus_knn_tuned <- table(prediction_knn_tuned, df_testing$stroke)
+matconfus_knn_tuned
+
+# calcul de l'erreur de prediction
+err_knn_tuned <- 1-(sum(diag(matconfus_knn_tuned)) / sum(matconfus_knn_tuned))
+err_knn_tuned*100
+
+# kappa
+CohenKappa(matconfus_knn_tuned)
+```
+Nombre de cluster opt
+```{r}
+k
+```
+## SVM
+### Sans optimisation
+
+```{r}
+
+# apprentissage
+model_svm=svm(stroke~., data=df_training, cost=0.5, kernel="linear")     
+
+# prediction 
+prediction_svm <- predict(model_svm, df_testing)
+
+# matrice de confusion
+matconfus_svm <- table(prediction_svm, df_testing$stroke)
+matconfus_svm
+
+# calcul de l'erreur de prediction
+err_svm <- 1-(sum(diag(matconfus_svm)) / sum(matconfus_svm))
+err_svm*100
+
+# kappa
+CohenKappa(matconfus_svm)
+```
+### Avec optimisation
+```{r}
+# apprentissage et tuning
+grid <- expand.grid(C=seq(0.01,1,0.03))  
+set.seed(42)
+model_svm_tuned <- train(stroke ~., data = df_training, 
+                method = "svmLinear", 
+                metric = "ROC", 
+                preProcess = c("scale", "center"), 
+                tuneGrid= grid,
+                trControl = df_control)
+
+# affichage du modele
+model_svm_tuned$finalModel
+c = model_svm_tuned$results$C[model_svm_tuned$results$ROC == max(model_svm_tuned$results$ROC)]
+ggplot(model_svm_tuned)+geom_vline(xintercept = c,color ='red')
+
+# prediction 
+prediction_svm_tuned <- predict(model_svm_tuned, df_testing)
+
+# matrice de confusion
+matconfus_svm_tuned <- table(prediction_svm_tuned, df_testing$stroke)
+matconfus_svm_tuned
+
+# calcul de l'erreur de prediction
+err_svm_tuned <- 1-(sum(diag(matconfus_svm_tuned)) / sum(matconfus_svm_tuned))
+err_svm_tuned*100
+
+# kappa
+CohenKappa(matconfus_svm_tuned)
+```
+Coût
+```{r}
+c
+```
+## Arbre de décision
+### Sans optimisation
+```{r}
+
+# apprentissage
+tree <- rpart(stroke ~.,data=df_training, method="class",
+              control=rpart.control(minsplit=1,cp=0,xval=10))
+
+# affichage du modele
+plot(tree)
+text(tree, use.n.=TRUE, all=TRUE, cex=.8)
+
+# prediction 
+prediction_tree <- predict(tree, df_testing, type="class")
+
+# matrice de confusion
+matconfus_tree <- table(prediction_tree, df_testing$stroke)
+matconfus_tree
+
+# calcul de l'erreur de prediction
+err_tree <- 1-(sum(diag(matconfus_tree)) / sum(matconfus_tree))
+err_tree*100
+
+# kappa
+CohenKappa(matconfus_tree)
+```
+### Avec optimisation
+```{r}
+# apprentissage et tuning
+set.seed(42)
+grid <- expand.grid(cp=seq(0.01,1,0.01)) 
+model_tree_tuned = train(stroke ~., 
+                  data=df_training, 
+                  method="rpart", 
+                  metric = "ROC", 
+                  tuneGrid= grid,
+                  trControl = df_control)
+
+# affichage du modele
+model_tree_tuned$finalModel
+summary(model_tree_tuned$finalModel)
+
+plot(model_tree_tuned$finalModel, uniform=TRUE, main="Pruned Classification Tree")
+
+text(model_tree_tuned$finalModel, use.n.=TRUE, all=TRUE, cex=.8)
+
+# prediction 
+prediction_tree_tuned <- predict(model_tree_tuned,  df_testing)
+
+# matrice de confusion
+matconfus_tree_tuned <- table(prediction_tree_tuned, df_testing$stroke)
+matconfus_tree_tuned
+
+# calcul de l'erreur de prediction
+err_tree_tuned <- 1-(sum(diag(matconfus_tree_tuned)) / sum(matconfus_tree_tuned))
+err_tree_tuned*100
+
+# kappa
+CohenKappa(matconfus_tree_tuned)
+```
+## Forêt aléatoire
+### Sans optimisation
+
+```{r}
+# apprentissage
+set.seed(42)
+model_rf <- train(stroke ~., 
+                data = df_training, 
+                method = "rf", 
+                metric = "ROC", 
+                trControl = df_control)
+
+model_rf$finalModel
+
+# prediction 
+prediction_rf <- predict(model_rf, df_testing)
+
+# matrice de confusion
+matconfus_rf <- table(prediction_rf, df_testing$stroke)
+matconfus_rf
+
+# calcul de l'erreur de prediction
+err_rf <- 1-(sum(diag(matconfus_rf)) / sum(matconfus_rf))
+err_rf*100
+
+# kappa
+CohenKappa(matconfus_rf)
+```
+### Avec optimisation
+```{r}
+# apprentissage et tuning
+grid <- expand.grid(mtry=2:12)
+set.seed(42)
+model_rf_tuned <- train(stroke ~., 
+                data = df_training, 
+                method = "rf", 
+                metric = "ROC",
+                tuneGrid= grid,
+                trControl = df_control)
+
+# affichage du modele
+plot(model_rf_tuned)
+plot(model_rf_tuned$finalModel)
+
+model_rf_tuned$finalModel
+varImpPlot(model_rf_tuned$finalModel, sort = TRUE, n.var = 13, main = "Variables importance")
+
+# prediction
+prediction_rf_tuned <- predict(model_rf_tuned, df_testing)
+
+# matrice de confusion
+matconfus_rf_tuned <- table(prediction_rf_tuned, df_testing$stroke)
+matconfus_rf_tuned
+
+# calcul de l'erreur de prediction
+err_rf_tuned <- 1-(sum(diag(matconfus_rf_tuned)) / sum(matconfus_rf_tuned))
+err_rf_tuned*100
+
+# kappa
+CohenKappa(matconfus_rf_tuned)
+```
+
+
+# Comparaison des différents modèles
+```{r}
+Methode <- c("glm","glm_tuned","knn_tuned","svm","svm_tuned","tree","tree_tuned","rf","rf_tuned")
+Erreur <- c(round(err_glm*100,2),
+            round(err_glm_tuned*100,2),
+            round(err_knn_tuned*100,2),
+            round(err_svm*100,2),
+            round(err_svm_tuned*100,2),
+            round(err_tree*100,2),
+            round(err_tree_tuned*100,2),
+            round(err_rf*100,2),
+            round(err_rf_tuned*100,2)
+            )
+Kappa <- c(round(CohenKappa(matconfus_glm),2),
+           round(CohenKappa(matconfus_glm_tuned),2),
+           round(CohenKappa(matconfus_knn_tuned),2),
+           round(CohenKappa(matconfus_svm),2),
+           round(CohenKappa(matconfus_svm_tuned),2),
+           round(CohenKappa(matconfus_tree),2),
+           round(CohenKappa(matconfus_tree_tuned),2),
+           round(CohenKappa(matconfus_rf),2),
+           round(CohenKappa(matconfus_rf_tuned),2)
+           )
+
+modele_compare <- data.frame(Methode, Erreur,Kappa)
+modele_compare
+
+
+```
+
+```{r}
+model_list <- list(logistic = model_glm_tuned,
+                   knn=model_knn_tuned,
+                   rf = model_rf_tuned, 
+                   svm = model_svm_tuned,  
+                   tree = model_tree_tuned)
+results <- resamples(model_list)
+
+summary(results)
+bwplot(results, metric = "ROC")
+```
+
+```{r}
+
+df_pred <- data.frame(obs=as.numeric(df_testing$stroke)-1,
+                      glm=as.numeric(prediction_glm_tuned)-1,
+                      knn=as.numeric(prediction_knn_tuned)-1,
+                      tree=as.numeric(prediction_tree_tuned)-1,
+                      rf=as.numeric(prediction_rf_tuned)-1,
+                      svm=as.numeric(prediction_svm_tuned)-1)
+
+
+plot(roc(df_pred$obs,df_pred$glm))
+plot(roc(df_pred$obs,df_pred$knn),add=TRUE,col="red")
+plot(roc(df_pred$obs,df_pred$tree),add=TRUE,col="purple")
+plot(roc(df_pred$obs,df_pred$rf),add=TRUE,col="green")
+plot(roc(df_pred$obs,df_pred$svm),add=TRUE,col="blue")
+
+legend("bottomright", inset = 0.1, legend = c("glm", "knn", "tree", "rf", "svm"), lty = 1,
+       col = c("black", "red", "purple","green","blue"))
 ```
 
