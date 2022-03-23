@@ -17,6 +17,7 @@ library(rpart)
 library(e1071)
 library(randomForest)
 library(pROC)
+library(explor)
 ```
 
 ```{r}
@@ -94,7 +95,7 @@ ggplot(data_format, aes(x=stroke, y=age, color=stroke)) +
 ```{r}
 # Regroupement selon plusieurs groupes d'âges
 
-table(data_format$stroke, data_format$age)
+#table(data_format$stroke, data_format$age)
 data_format$ageQ <- cut(data_format$age, 
                          breaks = c(-Inf
                                     ,29,49,64
@@ -116,13 +117,23 @@ data_format$ageQ <- suppressWarnings(as.factor(data_format$ageQ))
 ageQ <- as.data.frame(table(data_format$ageQ, data_format$stroke))
 colnames(ageQ) <- c('Classe_age','AVC','Fréquence')
 
+# calcul pourcentage avc par classe d'age
+ageQ_inf_30_avc <- (ageQ$Fréquence[ageQ$Classe_age =="inf_30" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="inf_30"]))*100
+ageQ_31_50_avc <- (ageQ$Fréquence[ageQ$Classe_age =="31_50" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="31_50"]))*100
+ageQ_51_65_avc <- (ageQ$Fréquence[ageQ$Classe_age =="51_65" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="51_65"]))*100
+ageQ_65_inf_avc <- (ageQ$Fréquence[ageQ$Classe_age =="65_inf" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="65_inf"]))*100
+print(paste("Pourcentage de inf_30 AVC : " ,round(ageQ_inf_30_avc,2),"%"))
+print(paste("Pourcentage de 31_50 AVC : " ,round(ageQ_31_50_avc,2),"%"))
+print(paste("Pourcentage de 51_65 AVC : " ,round(ageQ_51_65_avc,2),"%"))
+print(paste("Pourcentage de 65_inf AVC : " ,round(ageQ_65_inf_avc,2),"%"))
+
+# plot hist par classe d'age
 ggplot(ageQ, aes(x = Classe_age, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") + 
         ggtitle("Classe d'age en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
         geom_text(aes(label = Fréquence), vjust = 0)
 
 ```
-
 
 ## Variable - Genre
 ```{r}
@@ -133,8 +144,8 @@ colnames(gender) <- c('Genre','AVC','Fréquence')
 head(gender)
 
 # calcul pourcentage avc par genre
-femme_avc <- (gender$Fréquence[gender$Genre =="Female" & gender$AVC == "avcP"] / gender$Fréquence[gender$Genre =="Female" & gender$AVC == "avcN"])*100
-homme_avc <- (gender$Fréquence[gender$Genre =="Male" & gender$AVC == "avcP"] / gender$Fréquence[gender$Genre =="Male" & gender$AVC == "avcN"])*100
+femme_avc <- (gender$Fréquence[gender$Genre =="Female" & gender$AVC == "avcP"] / sum(gender$Fréquence[gender$Genre =="Female"]))*100
+homme_avc <- (gender$Fréquence[gender$Genre =="Male" & gender$AVC == "avcP"] / sum(gender$Fréquence[gender$Genre =="Male"]))*100
 print(paste("Pourcentage de femme AVC : " ,round(femme_avc,2),"%"))
 print(paste("Pourcentage de homme AVC : " ,round(homme_avc,2),"%"))
 
@@ -154,8 +165,8 @@ colnames(hypertension) <- c('Hypertension','AVC','Fréquence')
 head(hypertension)
 
 # calcul pourcentage avc par hypertension
-hypertention0_avc <- (hypertension$Fréquence[hypertension$Hypertension == "htN" & hypertension$AVC == "avcP"] / hypertension$Fréquence[hypertension$Hypertension == "htN" & hypertension$AVC == "avcN"])*100
-hypertention1_avc <- (hypertension$Fréquence[hypertension$Hypertension == "htP" & hypertension$AVC == "avcP"] / hypertension$Fréquence[hypertension$Hypertension == "htP" & hypertension$AVC == "avcN"])*100
+hypertention0_avc <- (hypertension$Fréquence[hypertension$Hypertension == "htN" & hypertension$AVC == "avcP"] / sum(hypertension$Fréquence[hypertension$Hypertension == "htN"]))*100
+hypertention1_avc <- (hypertension$Fréquence[hypertension$Hypertension == "htP" & hypertension$AVC == "avcP"] / sum(hypertension$Fréquence[hypertension$Hypertension == "htP"]))*100
 print(paste("Pourcentage de hypertension 0 AVC : " ,round(hypertention0_avc,2),"%"))
 print(paste("Pourcentage de hypertension 1 AVC : " ,round(hypertention1_avc,2),"%"))
 
@@ -174,8 +185,8 @@ colnames(maladie_cardiaque) <- c('Maladie_cardiaque','AVC','Fréquence')
 head(maladie_cardiaque)
 
 # calcul pourcentage avc par Maladie cardiaque
-maladie_cardiaque0 <- (maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdN" & maladie_cardiaque$AVC == "avcP"] / maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdN" & maladie_cardiaque$AVC == "avcN"])*100
-maladie_cardiaque1 <- (maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdP" & maladie_cardiaque$AVC == "avcP"] / maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdP" & maladie_cardiaque$AVC == "avcN"])*100
+maladie_cardiaque0 <- (maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdN" & maladie_cardiaque$AVC == "avcP"] / sum(maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdN"]))*100
+maladie_cardiaque1 <- (maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdP" & maladie_cardiaque$AVC == "avcP"] / sum(maladie_cardiaque$Fréquence[maladie_cardiaque$Maladie_cardiaque == "hdP"]))*100
 print(paste("Pourcentage de maladie cardiaque 0 AVC : " ,round(maladie_cardiaque0,2),"%"))
 print(paste("Pourcentage de maladie cardiaque 1 AVC : " ,round(maladie_cardiaque1,2),"%"))
 
@@ -194,8 +205,8 @@ colnames(mariage) <- c('Mariage','AVC','Fréquence')
 head(mariage)
 
 # calcul pourcentage avc par Mariage
-mariage_no <- (mariage$Fréquence[mariage$Mariage =="No" & mariage$AVC == "avcP"] / mariage$Fréquence[mariage$Mariage =="No" & mariage$AVC == "avcN"])*100
-mariage_yes <- (mariage$Fréquence[mariage$Mariage =="Yes" & mariage$AVC == "avcP"] / mariage$Fréquence[mariage$Mariage =="Yes" & mariage$AVC == "avcN"])*100
+mariage_no <- (mariage$Fréquence[mariage$Mariage =="No" & mariage$AVC == "avcP"] / sum(mariage$Fréquence[mariage$Mariage =="No"]))*100
+mariage_yes <- (mariage$Fréquence[mariage$Mariage =="Yes" & mariage$AVC == "avcP"] / sum(mariage$Fréquence[mariage$Mariage =="Yes"]))*100
 print(paste("Pourcentage de pas marié AVC : " ,round(mariage_no,2),"%"))
 print(paste("Pourcentage de marié AVC : " ,round(mariage_yes,2),"%"))
 
@@ -214,17 +225,14 @@ colnames(type_travail) <- c('Type_travail','AVC','Fréquence')
 head(type_travail)
 
 # calcul pourcentage avc par Travail
-enfant_avc <- (type_travail$Fréquence[type_travail$Type_travail =="children" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="children" & type_travail$AVC == "avcN"])*100
+gouvernement_job_avc <- (type_travail$Fréquence[type_travail$Type_travail =="govt_job" & type_travail$AVC == "avcP"] / sum(type_travail$Fréquence[type_travail$Type_travail =="govt_job"]))*100
 
-gouvernement_job_avc <- (type_travail$Fréquence[type_travail$Type_travail =="govt_job" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="govt_job" & type_travail$AVC == "avcN"])*100
+pas_travail_avc <- (type_travail$Fréquence[type_travail$Type_travail =="never_worked" & type_travail$AVC == "avcP"] / sum(type_travail$Fréquence[type_travail$Type_travail =="never_worked" ]))*100
 
-pas_travail_avc <- (type_travail$Fréquence[type_travail$Type_travail =="never_worked" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="never_worked" & type_travail$AVC == "avcN"])*100
+prive_avc <- (type_travail$Fréquence[type_travail$Type_travail =="private" & type_travail$AVC == "avcP"] / sum(type_travail$Fréquence[type_travail$Type_travail =="private"]))*100
 
-prive_avc <- (type_travail$Fréquence[type_travail$Type_travail =="private" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="private" & type_travail$AVC == "avcN"])*100
+independant_avc <- (type_travail$Fréquence[type_travail$Type_travail =="self_employed" & type_travail$AVC == "avcP"] / sum(type_travail$Fréquence[type_travail$Type_travail =="self_employed"]))*100
 
-independant_avc <- (type_travail$Fréquence[type_travail$Type_travail =="self_employed" & type_travail$AVC == "avcP"] / type_travail$Fréquence[type_travail$Type_travail =="self_employed" & type_travail$AVC == "avcN"])*100
-
-print(paste("Pourcentage de enfant AVC : " ,round(enfant_avc,2),"%"))
 print(paste("Pourcentage de job gouvernement AVC : " ,round(gouvernement_job_avc,2),"%"))
 print(paste("Pourcentage de pas de travail AVC : " ,round(pas_travail_avc,2),"%"))
 print(paste("Pourcentage de job privé AVC : " ,round(prive_avc,2),"%"))
@@ -245,8 +253,8 @@ colnames(type_residence) <- c('Type_residence','AVC','Fréquence')
 head(type_residence)
 
 # calcul pourcentage avc par Résidence
-rural_avc <- (type_residence$Fréquence[type_residence$Type_residence =="Rural" & type_residence$AVC == "avcP"] / type_residence$Fréquence[type_residence$Type_residence =="Rural" & type_residence$AVC == "avcN"])*100
-urbain_avc <- (type_residence$Fréquence[type_residence$Type_residence =="Urban" & type_residence$AVC == "avcP"] / type_residence$Fréquence[type_residence$Type_residence =="Urban" & type_residence$AVC == "avcN"])*100
+rural_avc <- (type_residence$Fréquence[type_residence$Type_residence =="Rural" & type_residence$AVC == "avcP"] / sum(type_residence$Fréquence[type_residence$Type_residence =="Rural"]))*100
+urbain_avc <- (type_residence$Fréquence[type_residence$Type_residence =="Urban" & type_residence$AVC == "avcP"] / sum(type_residence$Fréquence[type_residence$Type_residence =="Urban"]))*100
 print(paste("Pourcentage de rural AVC : " ,round(rural_avc,2),"%"))
 print(paste("Pourcentage de urbain AVC : " ,round(urbain_avc),"%"))
 
@@ -290,7 +298,7 @@ ggplot(data_format, aes(x=stroke, y=avg_glucose_level, color=stroke)) +
 
 ```{r}
 # Regroupement selon les niveaux de glucose
-summary(data_format$avg_glucose_level)
+#summary(data_format$avg_glucose_level)
 data_format$glucoseQ <- cut(data_format$avg_glucose_level, 
                          breaks = c(-Inf
                                     ,69, 99,125
@@ -312,7 +320,17 @@ data_format$glucoseQ <- suppressWarnings(as.factor(data_format$glucoseQ))
 glucoseQ <- as.data.frame(table(data_format$glucoseQ, data_format$stroke))
 colnames(glucoseQ) <- c('Classe_glucose','AVC','Fréquence')
 
+# calcul pourcentage avc par classe de glucose
+glucoseQ_inf_69_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="inf_69" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="inf_69"]))*100
+glucoseQ_70_100_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="70_100" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="70_100"]))*100
+glucoseQ_101_126_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="101_126" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="101_126"]))*100
+glucoseQ_127_inf_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="127_inf" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="127_inf"]))*100
+print(paste("Pourcentage de inf_69 AVC : " ,round(glucoseQ_inf_69_avc,2),"%"))
+print(paste("Pourcentage de 70_100 AVC : " ,round(glucoseQ_70_100_avc,2),"%"))
+print(paste("Pourcentage de 101_126 AVC : " ,round(glucoseQ_101_126_avc,2),"%"))
+print(paste("Pourcentage de 127_inf AVC : " ,round(glucoseQ_127_inf_avc,2),"%"))
 
+# plot hist par classe de glucose
 ggplot(glucoseQ, aes(x = Classe_glucose, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") + 
         ggtitle("Classe de niveau de glucose en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
@@ -356,7 +374,7 @@ ggplot(data_format, aes(x=stroke, y=bmi, color=stroke)) +
 ```{r}
 # Regroupement selon les groupes d'IMC
 
-summary(data_format$bmi)
+#summary(data_format$bmi)
 data_format$bmiQ <- cut(data_format$bmi, 
                          breaks = c(-Inf
                                     ,24.9, 29.9, 34.9
@@ -369,17 +387,28 @@ data_format$bmiQ <- cut(data_format$bmi,
                          right = FALSE)
 
 stroke_bmi <- as.data.frame(table(data_format$stroke, data_format$bmiQ))
-stroke_bmi
+#stroke_bmi
 
 # conversion de bmiQ chr en num
 data_format$bmiQ <- suppressWarnings(as.factor(data_format$bmiQ))
-data_format$bmiQ
+#data_format$bmiQ
 
 # dataframe de classe imc en fonction d'avc
 bmiQ <- as.data.frame(table(data_format$bmiQ, data_format$stroke))
 colnames(bmiQ) <- c('Classe_IMC','AVC','Fréquence')
 head(bmiQ)
 
+# calcul pourcentage avc par classe d'imc
+bmiQ_inf_25_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="inf_25" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="inf_25"]))*100
+bmiQ_25_30_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="25_30" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="25_30"]))*100
+bmiQ_30_35_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="30_35" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="30_35"]))*100
+bmiQ_35_inf_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="35_inf" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="35_inf"]))*100
+print(paste("Pourcentage de inf_25 AVC : " ,round(bmiQ_inf_25_avc,2),"%"))
+print(paste("Pourcentage de 25_30 AVC : " ,round(bmiQ_25_30_avc,2),"%"))
+print(paste("Pourcentage de 30_35 AVC : " ,round(bmiQ_30_35_avc,2),"%"))
+print(paste("Pourcentage de 35_inf AVC : " ,round(bmiQ_35_inf_avc,2),"%"))
+
+# plot hist par classe d'imc
 ggplot(bmiQ, aes(x = Classe_IMC, y = Fréquence, fill = AVC)) +
         geom_bar(stat = "identity") + 
         ggtitle("Classe de niveau d'IMC en fonction des chances de faire un AVC") + theme(plot.title = element_text(hjust = 0.5))+
@@ -396,9 +425,9 @@ colnames(fumeur) <- c('Statut_fumeur','AVC','Fréquence')
 head(fumeur)
 
 # calcul pourcentage avc par Fumeur
-ancien_fumeur_avc <- (fumeur$Fréquence[fumeur$Statut_fumeur =="formerly" & fumeur$AVC == "avcP"] / fumeur$Fréquence[fumeur$Statut_fumeur =="formerly" & fumeur$AVC == "avcN"])*100
-non_fumeur_avc <- (fumeur$Fréquence[fumeur$Statut_fumeur =="never" & fumeur$AVC == "avcP"] / fumeur$Fréquence[fumeur$Statut_fumeur =="never" & fumeur$AVC == "avcN"])*100
-fumeur_avc <- (fumeur$Fréquence[fumeur$Statut_fumeur =="smokes" & fumeur$AVC == "avcP"] / fumeur$Fréquence[fumeur$Statut_fumeur =="smokes" & fumeur$AVC == "avcN"])*100
+ancien_fumeur_avc <- (fumeur$Fréquence[fumeur$Statut_fumeur =="formerly" & fumeur$AVC == "avcP"] / sum(fumeur$Fréquence[fumeur$Statut_fumeur =="formerly"]))*100
+non_fumeur_avc <- (fumeur$Fréquence[fumeur$Statut_fumeur =="never" & fumeur$AVC == "avcP"] / sum(fumeur$Fréquence[fumeur$Statut_fumeur =="never"]))*100
+fumeur_avc <- (fumeur$Fréquence[fumeur$Statut_fumeur =="smokes" & fumeur$AVC == "avcP"] / sum(fumeur$Fréquence[fumeur$Statut_fumeur =="smokes"]))*100
 print(paste("Pourcentage de ancien fumeur AVC : " ,round(ancien_fumeur_avc,2),"%"))
 print(paste("Pourcentage de non fumeur AVC : " ,round(non_fumeur_avc,2),"%"))
 print(paste("Pourcentage de fumeur AVC : " ,round(fumeur_avc,2),"%"))
@@ -513,6 +542,48 @@ t$residuals # les personnes ayant un niveau de glucose supérieur a 127 ont plus
 t <- chisq.test(data_format$bmiQ,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals # les personnes ayant un imc entre 30 et 35 ont plus de chance de faire un AVC
 ```
+## Variables - Pourcentage AVC 
+```{r}
+print(paste("----------------------------------------------Genre------------------------------------------------- " ))
+print(paste("Pourcentage de femme AVC : " ,round(femme_avc,2),"%"))
+print(paste("Pourcentage de homme AVC : " ,round(homme_avc,2),"%"))
+print(paste("----------------------------------------------Hypertension------------------------------------------------- " ))
+print(paste("Pourcentage de hypertension AVC : " ,round(hypertention0_avc,2),"%"))
+print(paste("Pourcentage de hypertension AVC : " ,round(hypertention1_avc,2),"%"))
+print(paste("----------------------------------------------Maladie cardiaque------------------------------------------------- " ))
+print(paste("Pourcentage de maladie cardiaque AVC : " ,round(maladie_cardiaque0,2),"%"))
+print(paste("Pourcentage de maladie cardiaque AVC : " ,round(maladie_cardiaque1,2),"%"))
+print(paste("----------------------------------------------Mariage------------------------------------------------- " ))
+print(paste("Pourcentage de pas marié AVC : " ,round(mariage_no,2),"%"))
+print(paste("Pourcentage de marié AVC : " ,round(mariage_yes,2),"%"))
+print(paste("----------------------------------------------Type Job------------------------------------------------- " ))
+print(paste("Pourcentage de job gouvernement AVC : " ,round(gouvernement_job_avc,2),"%"))
+print(paste("Pourcentage de pas de travail AVC : " ,round(pas_travail_avc,2),"%"))
+print(paste("Pourcentage de job privé AVC : " ,round(prive_avc,2),"%"))
+print(paste("Pourcentage de indépendant AVC : " ,round(independant_avc,2),"%"))
+print(paste("----------------------------------------------Type résidence------------------------------------------------- " ))
+print(paste("Pourcentage de rural AVC : " ,round(rural_avc,2),"%"))
+print(paste("Pourcentage de urbain AVC : " ,round(urbain_avc),"%"))
+print(paste("----------------------------------------------Status fumeur------------------------------------------------- " ))
+print(paste("Pourcentage de ancien fumeur AVC : " ,round(ancien_fumeur_avc,2),"%"))
+print(paste("Pourcentage de non fumeur AVC : " ,round(non_fumeur_avc,2),"%"))
+print(paste("Pourcentage de fumeur AVC : " ,round(fumeur_avc,2),"%"))
+print(paste("----------------------------------------------Classe d'age------------------------------------------------- " ))
+print(paste("Pourcentage de inf_30 AVC : " ,round(ageQ_inf_30_avc,2),"%"))
+print(paste("Pourcentage de 31_50 AVC : " ,round(ageQ_31_50_avc,2),"%"))
+print(paste("Pourcentage de 51_65 AVC : " ,round(ageQ_51_65_avc,2),"%"))
+print(paste("Pourcentage de 65_inf AVC : " ,round(ageQ_65_inf_avc,2),"%"))
+print(paste("----------------------------------------------Classe de glucose------------------------------------------------- " ))
+print(paste("Pourcentage de inf_69 AVC : " ,round(glucoseQ_inf_69_avc,2),"%"))
+print(paste("Pourcentage de 70_100 AVC : " ,round(glucoseQ_70_100_avc,2),"%"))
+print(paste("Pourcentage de 101_126 AVC : " ,round(glucoseQ_101_126_avc,2),"%"))
+print(paste("Pourcentage de 127_inf AVC : " ,round(glucoseQ_127_inf_avc,2),"%"))
+print(paste("----------------------------------------------Classe d'IMC------------------------------------------------- " ))
+print(paste("Pourcentage de inf_25 AVC : " ,round(bmiQ_inf_25_avc,2),"%"))
+print(paste("Pourcentage de 25_30 AVC : " ,round(bmiQ_25_30_avc,2),"%"))
+print(paste("Pourcentage de 30_35 AVC : " ,round(bmiQ_30_35_avc,2),"%"))
+print(paste("Pourcentage de 35_inf AVC : " ,round(bmiQ_35_inf_avc,2),"%"))
+```
 
 # ANALYSE MULTIVARIEE
 
@@ -523,33 +594,32 @@ summary(avcQ)
 ```
 ```{r}
 quali <- avcQ[,-8]
-var_sup <- avcQ[,"stroke"]
+var_sup <- avcQ[,c("stroke")]
 acm <- dudi.acm(quali, scannf = FALSE, nf = 5)
-## Variable supplmentaire : variable cible Coro
 acm$supv <- supcol(acm, dudi.acm(var_sup, scannf = FALSE, nf = 5)$tab)
 #explor(acm)
 ```
 
-### Creation d'une variabme motivée par l'étude exploratoire descriptive
+Creation d'une variable motivée par l'étude exploratoire descriptive
 ```{r}
-# creation de la variable interaction entre Sexe et Age
-ageHeart=avcQ$ageQ:avcQ$heart_disease
-table(ageHeart,avcQ[,"stroke"])
+# creation de la variable interaction entre age et hypertension
+AgeHypertension=avcQ$ageQ:avcQ$hypertension
+table(AgeHypertension,avcQ[,"stroke"])
 
 # test de dependence avec la variable cible
-t <- chisq.test(ageHeart,avcQ$stroke)
+t <- chisq.test(AgeHypertension,avcQ$stroke)
 t$residuals
-#surtout l'age qui a un impact
 
-avcQ2=data.frame(avcQ,"ageHeart"=ageHeart)
-summary(avcQ2)
-quali2 <- avcQ2[,-c(1,9,10)]
-var_sup2 <- avcQ2[,c("ageQ","stroke","heart_disease")]
-acm2 <- dudi.acm(quali2, scannf = FALSE, nf = 5)
-acm2$supv <- supcol(acm2, dudi.acm(var_sup2, scannf = FALSE, nf = 5)$tab)
+#avcQ2=data.frame(avcQ,"AgeHypertension"=AgeHypertension)
+#summary(avcQ2)
+#quali2 <- avcQ2[,-c(1,9,10)]
+#var_sup2 <- avcQ2[,c("ageQ","stroke","hypertension")]
+#acm2 <- dudi.acm(quali2, scannf = FALSE, nf = 5)
+#acm2$supv <- supcol(acm2, dudi.acm(var_sup2, scannf = FALSE, nf = 5)$tab)
 
 #explor(acm2)
 ```
+
 # Equilibrage du jeu de données
 
 ```{r}
@@ -581,12 +651,17 @@ for ( i in 1:ncol(data_format)) {
 }
 str(stroke_oversampled)
 ```
-
-
+```{r}
+data_format_undersample <- data_format %>% 
+  group_by(stroke) %>% 
+  sample_n(180)
+table(data_format_undersample$stroke)
+```
 
 # Training/Test
 
 ```{r}
+set.seed(42)
 ### APPRENTISSAGE SUPERVISE
 
 # objectif double : 
@@ -595,19 +670,44 @@ str(stroke_oversampled)
 
 ## Comprendre les facteurs influençant la présence d’une maladie coronarienne
 
+# dataset avec meme attr de depart non équilibré
+data_format_raw <- data_format[-c(12,13,14)]
+# dataset avec meme attr de depart équilibré oversample
+data_format_oversample_raw <- stroke_oversampled[-c(12,13,14)]
+# data avec que variable qualitatif équilibré oversample
+data_format_oversample_quali <- stroke_oversampled[-c(2,8,9)]
+# dataset avec meme attr de depart équilibré undersample
+data_format_undersample_raw <- data_format_undersample[-c(12,13,14)]
 
 
-data_format_raw <- stroke_oversampled[-c(12,13,14)]
+# separation echantillons apprentissage / test dataset non équilibré de départ
 
-# separation echantillons apprentissage / test
-set.seed(42)
 df_sampling_index <- createDataPartition(data_format_raw$stroke, times = 1, p = 0.7, list = FALSE)
 
-df_training <- data_format_raw[df_sampling_index, ]
-df_testing <-  data_format_raw[-df_sampling_index, ]
+df_training_unbalanced <- data_format_raw[df_sampling_index, ]
+df_testing_unbalanced <-  data_format_raw[-df_sampling_index, ]
 
-prop.table(table(df_training$stroke))
-prop.table(table(df_testing$stroke))
+# separation echantillons apprentissage / test dataset équilibré de depart oversample
+
+df_sampling_index <- createDataPartition(data_format_oversample_raw$stroke, times = 1, p = 0.7, list = FALSE)
+
+df_training_over <- data_format_oversample_raw[df_sampling_index, ]
+df_testing_over <-  data_format_oversample_raw[-df_sampling_index, ]
+
+# separation echantillons apprentissage / test dataset équilibré variable qualitatif oversample
+
+df_sampling_index <- createDataPartition(data_format_oversample_quali$stroke, times = 1, p = 0.7, list = FALSE)
+
+df_training_over_quali <- data_format_oversample_quali[df_sampling_index, ]
+df_testing_over_quali <-  data_format_oversample_quali[-df_sampling_index, ]
+
+
+# separation echantillons apprentissage / test dataset équilibré de depart undersample
+
+df_sampling_index <- createDataPartition(data_format_undersample_raw$stroke, times = 1, p = 0.7, list = FALSE)
+
+df_training_under <- data_format_undersample_raw[df_sampling_index, ]
+df_testing_under <-  data_format_undersample_raw[-df_sampling_index, ]
 
 
 ### PHASE D APRENTISSAGE
@@ -622,22 +722,259 @@ df_control <- trainControl(method="cv", #validation croisee
                            summaryFunction = twoClassSummary) # on est dans un cas de classification binaire
 
 ```
+
+# Comparaison dataset
+## dataset de départ
+```{r}
+print("SVM")
+# apprentissage
+model_svm_unbalanced=svm(stroke~., data=df_training_unbalanced, cost=0.5, kernel="linear")     
+
+# prediction 
+prediction_svm_unbalanced <- predict(model_svm_unbalanced, df_testing_unbalanced)
+
+# matrice de confusion
+matconfus_svm_unbalanced <- table(prediction_svm_unbalanced, df_testing_unbalanced$stroke)
+matconfus_svm_unbalanced
+
+# calcul de l'erreur de prediction
+err_svm_unbalanced <- 1-(sum(diag(matconfus_svm_unbalanced)) / sum(matconfus_svm_unbalanced))
+err_svm_unbalanced*100
+
+# kappa / sensibilité / spécificité
+kappa_svm_unbalanced <- CohenKappa(matconfus_svm_unbalanced)
+sensitivity_svm_unbalanced <- sensitivity(prediction_svm_unbalanced, df_testing_unbalanced$stroke)
+specificity_svm_unbalanced <- specificity(prediction_svm_unbalanced, df_testing_unbalanced$stroke)
+
+print("Random forest")
+# apprentissage
+model_rf_unbalanced <- train(stroke ~., 
+                data = df_training_unbalanced, 
+                method = "rf", 
+                metric = "ROC",
+                preProcess = c("scale", "center"),
+                trControl = df_control)
+
+# prediction 
+prediction_rf_unbalanced <- predict(model_rf_unbalanced, df_testing_unbalanced)
+
+# matrice de confusion
+matconfus_rf_unbalanced <- table(prediction_rf_unbalanced, df_testing_unbalanced$stroke)
+matconfus_rf_unbalanced
+
+# calcul de l'erreur de prediction
+err_rf_unbalanced <- 1-(sum(diag(matconfus_rf_unbalanced)) / sum(matconfus_rf_unbalanced))
+err_rf_unbalanced*100
+
+# kappa / sensibilité / spécificité
+kappa_rf_unbalanced <- CohenKappa(matconfus_rf_unbalanced)
+sensitivity_rf_unbalanced <- sensitivity(prediction_rf_unbalanced, df_testing_unbalanced$stroke)
+specificity_rf_unbalanced <- specificity(prediction_rf_unbalanced, df_testing_unbalanced$stroke)
+```
+
+## dataset de départ avec oversample
+```{r}
+print("SVM")
+# apprentissage
+model_svm_over=svm(stroke~., data=df_training_over, cost=0.5, kernel="linear")     
+
+# prediction 
+prediction_svm_over <- predict(model_svm_over, df_testing_over)
+
+# matrice de confusion
+matconfus_svm_over <- table(prediction_svm_over, df_testing_over$stroke)
+matconfus_svm_over
+
+# calcul de l'erreur de prediction
+err_svm_over <- 1-(sum(diag(matconfus_svm_over)) / sum(matconfus_svm_over))
+err_svm_over*100
+
+# kappa / sensibilité / spécificité
+kappa_svm_over <- CohenKappa(matconfus_svm_over)
+sensitivity_svm_over <- sensitivity(prediction_svm_over, df_testing_over$stroke)
+specificity_svm_over <- specificity(prediction_svm_over, df_testing_over$stroke)
+
+print("Random forest")
+# apprentissage
+model_rf_over <- train(stroke ~., 
+                data = df_training_over, 
+                method = "rf", 
+                metric = "ROC",
+                preProcess = c("scale", "center"),
+                trControl = df_control)
+
+# prediction 
+prediction_rf_over <- predict(model_rf_over, df_testing_over)
+
+# matrice de confusion
+matconfus_rf_over <- table(prediction_rf_over, df_testing_over$stroke)
+matconfus_rf_over
+
+# calcul de l'erreur de prediction
+err_rf_over <- 1-(sum(diag(matconfus_rf_over)) / sum(matconfus_rf_over))
+err_rf_over*100
+
+# kappa / sensibilité / spécificité
+kappa_rf_over <- CohenKappa(matconfus_rf_over)
+sensitivity_rf_over <- sensitivity(prediction_rf_over, df_testing_over$stroke)
+specificity_rf_over <- specificity(prediction_rf_over, df_testing_over$stroke)
+```
+
+## dataset avec variables qualitatives et oversample
+```{r}
+print("SVM")
+# apprentissage
+model_svm_over_quali=svm(stroke~., data=df_training_over_quali, cost=0.5, kernel="linear")     
+
+# prediction 
+prediction_svm_over_quali <- predict(model_svm_over_quali, df_testing_over_quali)
+
+# matrice de confusion
+matconfus_svm_over_quali <- table(prediction_svm_over_quali, df_testing_over_quali$stroke)
+matconfus_svm_over_quali
+
+# calcul de l'erreur de prediction
+err_svm_over_quali <- 1-(sum(diag(matconfus_svm_over_quali)) / sum(matconfus_svm_over_quali))
+err_svm_over_quali*100
+
+# kappa / sensibilité / spécificité
+kappa_svm_over_quali <- CohenKappa(matconfus_svm_over_quali)
+sensitivity_svm_over_quali <- sensitivity(prediction_svm_over_quali, df_testing_over_quali$stroke)
+specificity_svm_over_quali <- specificity(prediction_svm_over_quali, df_testing_over_quali$stroke)
+
+print("Random forest")
+# apprentissage
+model_rf_over_quali <- train(stroke ~., 
+                data = df_training_over_quali, 
+                method = "rf", 
+                metric = "ROC",
+                preProcess = c("scale", "center"),
+                trControl = df_control)
+
+# prediction 
+prediction_rf_over_quali <- predict(model_rf_over_quali, df_testing_over_quali)
+
+# matrice de confusion
+matconfus_rf_over_quali <- table(prediction_rf_over_quali, df_testing_over_quali$stroke)
+matconfus_rf_over_quali
+
+# calcul de l'erreur de prediction
+err_rf_over_quali <- 1-(sum(diag(matconfus_rf_over_quali)) / sum(matconfus_rf_over_quali))
+err_rf_over_quali*100
+
+# kappa / sensibilité / spécificité
+kappa_rf_over_quali <- CohenKappa(matconfus_rf_over_quali)
+sensitivity_rf_over_quali <- sensitivity(prediction_rf_over_quali, df_testing_over_quali$stroke)
+specificity_rf_over_quali <- specificity(prediction_rf_over_quali, df_testing_over_quali$stroke)
+```
+
+## dataset avec variables départ et undersample
+```{r}
+print("SVM")
+# apprentissage
+model_svm_under=svm(stroke~., data=df_training_under, cost=0.5, kernel="linear")     
+
+# prediction 
+prediction_svm_under <- predict(model_svm_under, df_testing_under)
+
+# matrice de confusion
+matconfus_svm_under <- table(prediction_svm_under, df_testing_under$stroke)
+matconfus_svm_under
+
+# calcul de l'erreur de prediction
+err_svm_under <- 1-(sum(diag(matconfus_svm_under)) / sum(matconfus_svm_under))
+err_svm_under*100
+
+# kappa / sensibilité / spécificité
+kappa_svm_under <- CohenKappa(matconfus_svm_under)
+sensitivity_svm_under <- sensitivity(prediction_svm_under, df_testing_under$stroke)
+specificity_svm_under <- specificity(prediction_svm_under, df_testing_under$stroke)
+
+print("Random forest")
+# apprentissage
+model_rf_under <- train(stroke ~., 
+                data = df_training_under, 
+                method = "rf", 
+                metric = "ROC",
+                preProcess = c("scale", "center"),
+                trControl = df_control)
+
+# prediction 
+prediction_rf_under <- predict(model_rf_under, df_testing_under)
+
+# matrice de confusion
+matconfus_rf_under <- table(prediction_rf_under, df_testing_under$stroke)
+matconfus_rf_under
+
+# calcul de l'erreur de prediction
+err_rf_under <- 1-(sum(diag(matconfus_rf_under)) / sum(matconfus_rf_under))
+err_rf_under*100
+
+# kappa / sensibilité / spécificité
+kappa_rf_under <- CohenKappa(matconfus_rf_under)
+sensitivity_rf_under <- sensitivity(prediction_rf_under, df_testing_under$stroke)
+specificity_rf_under <- specificity(prediction_rf_under, df_testing_under$stroke)
+```
+## Comparaison des dataset
+```{r}
+Methode <- c("svm unbalanced","rf unbalanced","svm oversample","rf oversample","svm oversample quali","rf oversample quali","svm undersample","rf undersample")
+Erreur <- c(round(err_svm_unbalanced*100,2),
+            round(err_rf_unbalanced*100,2),
+            round(err_svm_over*100,2),
+            round(err_rf_over*100,2),
+            round(err_svm_over_quali*100,2),
+            round(err_rf_over_quali*100,2),
+            round(err_svm_under*100,2),
+            round(err_rf_under*100,2)
+            )
+Kappa <- c(round(kappa_svm_unbalanced,2),
+           round(kappa_rf_unbalanced,2),
+           round(kappa_svm_over,2),
+           round(kappa_rf_over,2),
+           round(kappa_svm_over_quali,2),
+           round(kappa_rf_over_quali,2),
+           round(kappa_svm_under,2),
+           round(kappa_rf_under,2)
+           )
+Sensibilité <- c(round(sensitivity_svm_unbalanced,2),
+            round(sensitivity_rf_unbalanced,2),
+            round(sensitivity_svm_over,2),
+            round(sensitivity_rf_over,2),
+            round(sensitivity_svm_over_quali,2),
+            round(sensitivity_rf_over_quali,2),
+            round(sensitivity_svm_under,2),
+            round(sensitivity_rf_under,2)
+            )
+Specificité <- c(round(specificity_svm_unbalanced,2),
+            round(specificity_rf_unbalanced,2),
+            round(specificity_svm_over,2),
+            round(specificity_rf_over,2),
+            round(specificity_svm_over_quali,2),
+            round(specificity_rf_over_quali,2),
+            round(specificity_svm_under,2),
+            round(specificity_rf_under,2)
+           )
+
+dataset_compare <- data.frame(Methode, Erreur, Kappa, Sensibilité, Specificité)
+dataset_compare
+```
+
+
 # Entrainement des différents modèles
 ## Regression logistique binaire
 ### Sans optimisation
 ```{r}
-
 # apprentissage
 
-model_glm <- glm(stroke ~., data=df_training, family=binomial(link="logit")) 
+model_glm <- glm(stroke ~., data=df_training_over, family=binomial(link="logit")) 
 summary(model_glm)
 
 # prediction 
-prediction_glm <- predict(model_glm, df_testing, type="response")
-prediction_glm <- ifelse(prediction_glm<0.5,"avcN_pred","avcP_pred")
+prediction_glm <- predict(model_glm, df_testing_over, type="response")
+prediction_glm <- ifelse(prediction_glm<0.5,"avcN","avcP")
 
 # matrice de confusion
-matconfus_glm <- table(prediction_glm, df_testing$stroke)
+matconfus_glm <- table(prediction_glm, df_testing_over$stroke)
 matconfus_glm
 
 
@@ -645,27 +982,35 @@ matconfus_glm
 err_glm <- 1-(sum(diag(matconfus_glm)) / sum(matconfus_glm))
 err_glm*100
 
-# kappa
-CohenKappa(matconfus_glm)
+# kappa / sensibilité / specificté
+kappa_glm <- CohenKappa(matconfus_glm)
+kappa_glm
+sensitivity_glm <- sensitivity(factor(prediction_glm), df_testing_over$stroke)
+sensitivity_glm
+specificity_glm <- specificity(factor(prediction_glm), df_testing_over$stroke)
+specificity_glm
 ```
+
+
 
 ### Avec optimisation
 ```{r}
 # apprentissage et tuning
 set.seed(42)
 model_glm_tuned = train(stroke ~.,
-                df_training,
+                df_training_over,
                 method = "glmStepAIC", ## selection forward par minimisation de l'AIC
                 metric="ROC",
+                preProcess = c("scale", "center"),
                 trControl = df_control)
 
 summary(model_glm_tuned$finalModel)
 
 # prediction 
-prediction_glm_tuned <- predict(model_glm_tuned, df_testing)
+prediction_glm_tuned <- predict(model_glm_tuned, df_testing_over)
 
 # matrice de confusion
-matconfus_glm_tuned <- table(prediction_glm_tuned, df_testing$stroke)
+matconfus_glm_tuned <- table(prediction_glm_tuned, df_testing_over$stroke)
 matconfus_glm_tuned
 
 
@@ -673,10 +1018,15 @@ matconfus_glm_tuned
 err_glm_tuned <- 1-(sum(diag(matconfus_glm_tuned)) / sum(matconfus_glm_tuned))
 err_glm_tuned*100
 
-# kappa
-CohenKappa(matconfus_glm_tuned)
-
+# kappa / sensibilité / specificté
+kappa_glm_tuned <- CohenKappa(matconfus_glm_tuned)
+kappa_glm_tuned
+sensitivity_glm_tuned <- sensitivity(prediction_glm_tuned, df_testing_over$stroke)
+sensitivity_glm_tuned
+specificity_glm_tuned <- specificity(prediction_glm_tuned, df_testing_over$stroke)
+specificity_glm_tuned
 ```
+
 
 ## K-NN
 ### Sans optimisation
@@ -686,7 +1036,7 @@ CohenKappa(matconfus_glm_tuned)
 set.seed(42)
 grid <- expand.grid(.k=seq(1,50,by=1))
 model_knn_tuned <- train(stroke ~.,
-                         data = df_training, 
+                         data = df_training_over, 
                          method = "knn", 
                          metric = "ROC",
                          preProcess = c('center', 'scale'),
@@ -699,20 +1049,27 @@ k = model_knn_tuned$results$k[model_knn_tuned$results$ROC == max(model_knn_tuned
 ggplot(model_knn_tuned)+geom_vline(xintercept = k,color ='red') # performance metric (ROC) en fonction des valeurs de C (le parametre a optimiser)
 
 # prediction 
-prediction_knn_tuned <- predict(model_knn_tuned, df_testing,type="prob")
-prediction_knn_tuned <- predict(model_knn_tuned, df_testing)#,type="prob")
+prediction_knn_tuned <- predict(model_knn_tuned, df_testing_over,type="prob")
+prediction_knn_tuned <- predict(model_knn_tuned, df_testing_over)#,type="prob")
 
 # matrice de confusion
-matconfus_knn_tuned <- table(prediction_knn_tuned, df_testing$stroke)
+matconfus_knn_tuned <- table(prediction_knn_tuned, df_testing_over$stroke)
 matconfus_knn_tuned
 
 # calcul de l'erreur de prediction
 err_knn_tuned <- 1-(sum(diag(matconfus_knn_tuned)) / sum(matconfus_knn_tuned))
 err_knn_tuned*100
 
-# kappa
-CohenKappa(matconfus_knn_tuned)
+# kappa / sensibilité / specificté
+kappa_knn_tuned <- CohenKappa(matconfus_knn_tuned)
+kappa_knn_tuned
+sensitivity_knn_tuned <- sensitivity(prediction_knn_tuned, df_testing_over$stroke)
+sensitivity_knn_tuned
+specificity_knn_tuned <- specificity(prediction_knn_tuned, df_testing_over$stroke)
+specificity_knn_tuned
 ```
+
+
 Nombre de cluster opt
 ```{r}
 k
@@ -721,30 +1078,34 @@ k
 ### Sans optimisation
 
 ```{r}
-
 # apprentissage
-model_svm=svm(stroke~., data=df_training, cost=0.5, kernel="linear")     
+model_svm=svm(stroke~., data=df_training_over, cost=0.5, kernel="linear")     
 
 # prediction 
-prediction_svm <- predict(model_svm, df_testing)
+prediction_svm <- predict(model_svm, df_testing_over)
 
 # matrice de confusion
-matconfus_svm <- table(prediction_svm, df_testing$stroke)
+matconfus_svm <- table(prediction_svm, df_testing_over$stroke)
 matconfus_svm
 
 # calcul de l'erreur de prediction
 err_svm <- 1-(sum(diag(matconfus_svm)) / sum(matconfus_svm))
 err_svm*100
 
-# kappa
-CohenKappa(matconfus_svm)
+# kappa / sensibilité / specificté
+kappa_svm <- CohenKappa(matconfus_svm)
+kappa_svm
+sensitivity_svm <- sensitivity(prediction_svm, df_testing_over$stroke)
+sensitivity_svm
+specificity_svm <- specificity(prediction_svm, df_testing_over$stroke)
+specificity_svm
 ```
+
 ### Avec optimisation
 ```{r}
 # apprentissage et tuning
 grid <- expand.grid(C=seq(0.01,1,0.03))  
-set.seed(42)
-model_svm_tuned <- train(stroke ~., data = df_training, 
+model_svm_tuned <- train(stroke ~., data = df_training_over, 
                 method = "svmLinear", 
                 metric = "ROC", 
                 preProcess = c("scale", "center"), 
@@ -757,18 +1118,23 @@ c = model_svm_tuned$results$C[model_svm_tuned$results$ROC == max(model_svm_tuned
 ggplot(model_svm_tuned)+geom_vline(xintercept = c,color ='red')
 
 # prediction 
-prediction_svm_tuned <- predict(model_svm_tuned, df_testing)
+prediction_svm_tuned <- predict(model_svm_tuned, df_testing_over)
 
 # matrice de confusion
-matconfus_svm_tuned <- table(prediction_svm_tuned, df_testing$stroke)
+matconfus_svm_tuned <- table(prediction_svm_tuned, df_testing_over$stroke)
 matconfus_svm_tuned
 
 # calcul de l'erreur de prediction
 err_svm_tuned <- 1-(sum(diag(matconfus_svm_tuned)) / sum(matconfus_svm_tuned))
 err_svm_tuned*100
 
-# kappa
-CohenKappa(matconfus_svm_tuned)
+# kappa / sensibilité / specificté
+kappa_svm_tuned <- CohenKappa(matconfus_svm_tuned)
+kappa_svm_tuned
+sensitivity_svm_tuned <- sensitivity(prediction_svm_tuned, df_testing_over$stroke)
+sensitivity_svm_tuned
+specificity_svm_tuned <- specificity(prediction_svm_tuned, df_testing_over$stroke)
+specificity_svm_tuned
 ```
 Coût
 ```{r}
@@ -779,7 +1145,7 @@ c
 ```{r}
 
 # apprentissage
-tree <- rpart(stroke ~.,data=df_training, method="class",
+tree <- rpart(stroke ~.,data=df_training_over, method="class",
               control=rpart.control(minsplit=1,cp=0,xval=10))
 
 # affichage du modele
@@ -787,28 +1153,35 @@ plot(tree)
 text(tree, use.n.=TRUE, all=TRUE, cex=.8)
 
 # prediction 
-prediction_tree <- predict(tree, df_testing, type="class")
+prediction_tree <- predict(tree, df_testing_over, type="class")
 
 # matrice de confusion
-matconfus_tree <- table(prediction_tree, df_testing$stroke)
+matconfus_tree <- table(prediction_tree, df_testing_over$stroke)
 matconfus_tree
 
 # calcul de l'erreur de prediction
 err_tree <- 1-(sum(diag(matconfus_tree)) / sum(matconfus_tree))
 err_tree*100
 
-# kappa
-CohenKappa(matconfus_tree)
+# kappa / sensibilité / specificté
+kappa_tree <- CohenKappa(matconfus_tree)
+kappa_tree
+sensitivity_tree <- sensitivity(prediction_tree, df_testing_over$stroke)
+sensitivity_tree
+specificity_tree <- specificity(prediction_tree, df_testing_over$stroke)
+specificity_tree
 ```
+
 ### Avec optimisation
 ```{r}
 # apprentissage et tuning
-set.seed(42)
+
 grid <- expand.grid(cp=seq(0.01,1,0.01)) 
 model_tree_tuned = train(stroke ~., 
-                  data=df_training, 
+                  data=df_training_over, 
                   method="rpart", 
-                  metric = "ROC", 
+                  metric = "ROC",
+                  preProcess = c("scale", "center"), 
                   tuneGrid= grid,
                   trControl = df_control)
 
@@ -821,57 +1194,71 @@ plot(model_tree_tuned$finalModel, uniform=TRUE, main="Pruned Classification Tree
 text(model_tree_tuned$finalModel, use.n.=TRUE, all=TRUE, cex=.8)
 
 # prediction 
-prediction_tree_tuned <- predict(model_tree_tuned,  df_testing)
+prediction_tree_tuned <- predict(model_tree_tuned,  df_testing_over)
 
 # matrice de confusion
-matconfus_tree_tuned <- table(prediction_tree_tuned, df_testing$stroke)
+matconfus_tree_tuned <- table(prediction_tree_tuned, df_testing_over$stroke)
 matconfus_tree_tuned
 
 # calcul de l'erreur de prediction
 err_tree_tuned <- 1-(sum(diag(matconfus_tree_tuned)) / sum(matconfus_tree_tuned))
 err_tree_tuned*100
 
-# kappa
-CohenKappa(matconfus_tree_tuned)
+# kappa / sensibilité / specificté
+kappa_tree_tuned <- CohenKappa(matconfus_tree_tuned)
+kappa_tree_tuned
+sensitivity_tree_tuned <- sensitivity(prediction_tree_tuned, df_testing_over$stroke)
+sensitivity_tree_tuned
+specificity_tree_tuned <- specificity(prediction_tree_tuned, df_testing_over$stroke)
+specificity_tree_tuned
 ```
+
+
 ## Forêt aléatoire
 ### Sans optimisation
 
 ```{r}
 # apprentissage
-set.seed(42)
 model_rf <- train(stroke ~., 
-                data = df_training, 
+                data = df_training_over, 
                 method = "rf", 
-                metric = "ROC", 
+                metric = "ROC",
+                preProcess = c("scale", "center"),
                 trControl = df_control)
 
 model_rf$finalModel
 
 # prediction 
-prediction_rf <- predict(model_rf, df_testing)
+prediction_rf <- predict(model_rf, df_testing_over)
 
 # matrice de confusion
-matconfus_rf <- table(prediction_rf, df_testing$stroke)
+matconfus_rf <- table(prediction_rf, df_testing_over$stroke)
 matconfus_rf
 
 # calcul de l'erreur de prediction
 err_rf <- 1-(sum(diag(matconfus_rf)) / sum(matconfus_rf))
 err_rf*100
 
-# kappa
-CohenKappa(matconfus_rf)
+# kappa / sensibilité / specificté
+kappa_rf <- CohenKappa(matconfus_rf)
+kappa_rf
+sensitivity_rf <- sensitivity(prediction_rf, df_testing_over$stroke)
+sensitivity_rf
+specificity_rf <- specificity(prediction_rf, df_testing_over$stroke)
+specificity_rf
 ```
+
 ### Avec optimisation
 ```{r}
 # apprentissage et tuning
-grid <- expand.grid(mtry=2:12)
-set.seed(42)
+grid <- expand.grid(mtry=2:10)
+
 model_rf_tuned <- train(stroke ~., 
-                data = df_training, 
+                data = df_training_over, 
                 method = "rf", 
                 metric = "ROC",
                 tuneGrid= grid,
+                preProcess = c("scale", "center"),
                 trControl = df_control)
 
 # affichage du modele
@@ -882,22 +1269,86 @@ model_rf_tuned$finalModel
 varImpPlot(model_rf_tuned$finalModel, sort = TRUE, n.var = 13, main = "Variables importance")
 
 # prediction
-prediction_rf_tuned <- predict(model_rf_tuned, df_testing)
+prediction_rf_tuned <- predict(model_rf_tuned, df_testing_over)
 
 # matrice de confusion
-matconfus_rf_tuned <- table(prediction_rf_tuned, df_testing$stroke)
+matconfus_rf_tuned <- table(prediction_rf_tuned, df_testing_over$stroke)
 matconfus_rf_tuned
 
 # calcul de l'erreur de prediction
 err_rf_tuned <- 1-(sum(diag(matconfus_rf_tuned)) / sum(matconfus_rf_tuned))
 err_rf_tuned*100
 
-# kappa
-CohenKappa(matconfus_rf_tuned)
+# kappa / sensibilité / specificté
+kappa_rf_tuned <- CohenKappa(matconfus_rf_tuned)
+kappa_rf_tuned
+sensitivity_rf_tuned <- sensitivity(prediction_rf_tuned, df_testing_over$stroke)
+sensitivity_rf_tuned
+specificity_rf_tuned <- specificity(prediction_rf_tuned, df_testing_over$stroke)
+specificity_rf_tuned
 ```
 
 
 # Comparaison des différents modèles
+
+```{r}
+
+### les courbes ROC des 5 méthodes
+
+# glm
+pr_glm = prediction(as.numeric(prediction_glm_tuned), as.numeric(df_testing_over$stroke))
+prf_glm = performance(pr_glm, measure = "tpr", x.measure = "fpr")
+plot(prf_glm)
+
+# knn
+pr_knn = prediction(as.numeric(prediction_knn_tuned), as.numeric(df_testing_over$stroke))
+prf_knn = performance(pr_knn, measure = "tpr", x.measure = "fpr")
+plot(prf_knn, col="red", add=TRUE)
+
+# tree
+pr_tree = prediction(as.numeric(prediction_tree_tuned), as.numeric(df_testing_over$stroke))
+prf_tree = performance(pr_tree, measure = "tpr", x.measure = "fpr")
+plot(prf_tree, col="purple",add=TRUE)
+
+# rf
+pr_rf = prediction(as.numeric(prediction_rf_tuned), as.numeric(df_testing_over$stroke))
+prf_rf = performance(pr_rf, measure = "tpr", x.measure = "fpr")
+plot(prf_rf, col="green", add=TRUE)
+
+# svm
+pr_svm = prediction(as.numeric(prediction_svm_tuned), as.numeric(df_testing_over$stroke))
+prf_svm = performance(pr_svm, measure = "tpr", x.measure = "fpr")
+plot(prf_svm, col="blue", add=TRUE)
+
+
+legend("bottomright", inset = 0.1, legend = c("glm", "knn", "tree", "rf", "svm"), lty = 1,
+       col = c("black", "red", "purple","green","blue"))
+
+
+### les AUC pour les 5 methodes
+
+# glm
+auc_glm = performance(pr_glm, measure = "auc")
+auc_glm = auc_glm@y.values[[1]]
+
+# knn
+auc_knn = performance(pr_knn, measure = "auc")
+auc_knn = auc_knn@y.values[[1]]
+
+
+# tree
+auc_tree = performance(pr_tree, measure = "auc")
+auc_tree = auc_tree@y.values[[1]]
+
+# rf
+auc_rf = performance(pr_rf, measure = "auc")
+auc_rf = auc_rf@y.values[[1]]
+
+# svm
+auc_svm = performance(pr_svm, measure = "auc")
+auc_svm = auc_svm@y.values[[1]]
+```
+
 ```{r}
 Methode <- c("glm","glm_tuned","knn_tuned","svm","svm_tuned","tree","tree_tuned","rf","rf_tuned")
 Erreur <- c(round(err_glm*100,2),
@@ -910,21 +1361,49 @@ Erreur <- c(round(err_glm*100,2),
             round(err_rf*100,2),
             round(err_rf_tuned*100,2)
             )
-Kappa <- c(round(CohenKappa(matconfus_glm),2),
-           round(CohenKappa(matconfus_glm_tuned),2),
-           round(CohenKappa(matconfus_knn_tuned),2),
-           round(CohenKappa(matconfus_svm),2),
-           round(CohenKappa(matconfus_svm_tuned),2),
-           round(CohenKappa(matconfus_tree),2),
-           round(CohenKappa(matconfus_tree_tuned),2),
-           round(CohenKappa(matconfus_rf),2),
-           round(CohenKappa(matconfus_rf_tuned),2)
+Kappa <- c(round(kappa_glm,2),
+           round(kappa_glm_tuned,2),
+           round(kappa_knn_tuned,2),
+           round(kappa_svm,2),
+           round(kappa_svm_tuned,2),
+           round(kappa_tree,2),
+           round(kappa_tree_tuned,2),
+           round(kappa_rf,2),
+           round(kappa_rf_tuned,2)
+           )
+Sensibilité <- c(round(sensitivity_glm,2),
+            round(sensitivity_glm_tuned,2),
+            round(sensitivity_knn_tuned,2),
+            round(sensitivity_svm,2),
+            round(sensitivity_svm_tuned,2),
+            round(sensitivity_tree,2),
+            round(sensitivity_tree_tuned,2),
+            round(sensitivity_rf,2),
+            round(sensitivity_rf_tuned,2)
+            )
+Specificité <- c(round(specificity_glm,2),
+            round(specificity_glm_tuned,2),
+            round(specificity_knn_tuned,2),
+            round(specificity_svm,2),
+            round(specificity_svm_tuned,2),
+            round(specificity_tree,2),
+            round(specificity_tree_tuned,2),
+            round(specificity_rf,2),
+            round(specificity_rf_tuned,2)
+           )
+AUC <- c("x",
+            round(auc_glm,2),
+            round(auc_knn,2),
+            "x",
+            round(auc_svm,2),
+            "x",
+            round(auc_tree,2),
+            "x",
+            round(auc_rf,2)
            )
 
-modele_compare <- data.frame(Methode, Erreur,Kappa)
+modele_compare <- data.frame(Methode, Erreur,Kappa, Sensibilité, Specificité, AUC)
 modele_compare
-
-
 ```
 
 ```{r}
@@ -936,26 +1415,9 @@ model_list <- list(logistic = model_glm_tuned,
 results <- resamples(model_list)
 
 summary(results)
+bwplot(results)
 bwplot(results, metric = "ROC")
-```
-
-```{r}
-
-df_pred <- data.frame(obs=as.numeric(df_testing$stroke)-1,
-                      glm=as.numeric(prediction_glm_tuned)-1,
-                      knn=as.numeric(prediction_knn_tuned)-1,
-                      tree=as.numeric(prediction_tree_tuned)-1,
-                      rf=as.numeric(prediction_rf_tuned)-1,
-                      svm=as.numeric(prediction_svm_tuned)-1)
-
-
-plot(roc(df_pred$obs,df_pred$glm))
-plot(roc(df_pred$obs,df_pred$knn),add=TRUE,col="red")
-plot(roc(df_pred$obs,df_pred$tree),add=TRUE,col="purple")
-plot(roc(df_pred$obs,df_pred$rf),add=TRUE,col="green")
-plot(roc(df_pred$obs,df_pred$svm),add=TRUE,col="blue")
-
-legend("bottomright", inset = 0.1, legend = c("glm", "knn", "tree", "rf", "svm"), lty = 1,
-       col = c("black", "red", "purple","green","blue"))
+bwplot(results, metric = "Spec")
+bwplot(results, metric = "Sens")
 ```
 
