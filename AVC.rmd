@@ -125,7 +125,7 @@ ageQ_66_plus_avc <- (ageQ$Fréquence[ageQ$Classe_age =="66_plus" & ageQ$AVC == "
 print(paste("Pourcentage de 0_30 AVC : " ,round(ageQ_0_30_avc,2),"%"))
 print(paste("Pourcentage de 31_50 AVC : " ,round(ageQ_31_50_avc,2),"%"))
 print(paste("Pourcentage de 51_65 AVC : " ,round(ageQ_66_plus_avc,2),"%"))
-print(paste("Pourcentage de 66_plus AVC : " ,round(ageQ_65_inf_avc,2),"%"))
+print(paste("Pourcentage de 66_plus AVC : " ,round(ageQ_66_plus_avc,2),"%"))
 
 # plot hist par classe d'age
 ggplot(ageQ, aes(x = Classe_age, y = Fréquence, fill = AVC)) +
