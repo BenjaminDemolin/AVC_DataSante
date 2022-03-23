@@ -1,0 +1,30 @@
+"Attribut","Pourcantage_avc"
+"Genre : femme",5.03
+"Genre : homme",5.6
+"Hypertension : sans",4.08
+"Hypertension : avec",13.97
+"Maladie cardiaque : sans",4.47
+"Maladie cardiaque : avec",17.48
+"Statut matrimonial : jamais",2.42
+"Statut matrimonial : deja",6.16
+"Type job : job gvt",0
+"Type job : sans travail",4.47
+"Type job : job prive",4.95
+"Type job : independant",7.63
+"Type résidence : rural",5.12
+"Type résidence : urbain",5.39
+"Statut fumeur :ancien fumeur",6.82
+"Statut fumeur : non fumeur",4.54
+"Statu fumeur : fumeur",5.29
+"Classe age : 0 30",0
+"Classe age : 31 50",1.15
+"Classe age : 51 65",5.29
+"Classe age : 66 plus",14.25
+"Classe glucose : 0 69",3.5
+"Classe glucose : 70 100",3.85
+"Classe glucose : 101 126",3.94
+"Classe glucose : 127 plus",10.62
+"Classe IMC : 0 25",3.87
+"Classe IMC : 25 30",5.59
+"Classe IMC : 30 35",6.38
+"Classe IMC : 35 plus",5.01

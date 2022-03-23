@@ -101,8 +101,8 @@ data_format$ageQ <- cut(data_format$age,
                                     ,29,49,64
                                     , Inf), 
                          
-                         labels = c("inf_30"
-                                    ,"31_50","51_65","65_inf"
+                         labels = c("0_30"
+                                    ,"31_50","51_65","66_plus"
                                     ),
                          right = FALSE)
 
@@ -118,14 +118,14 @@ ageQ <- as.data.frame(table(data_format$ageQ, data_format$stroke))
 colnames(ageQ) <- c('Classe_age','AVC','Fréquence')
 
 # calcul pourcentage avc par classe d'age
-ageQ_inf_30_avc <- (ageQ$Fréquence[ageQ$Classe_age =="inf_30" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="inf_30"]))*100
+ageQ_0_30_avc <- (ageQ$Fréquence[ageQ$Classe_age =="0_30" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="0_30"]))*100
 ageQ_31_50_avc <- (ageQ$Fréquence[ageQ$Classe_age =="31_50" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="31_50"]))*100
 ageQ_51_65_avc <- (ageQ$Fréquence[ageQ$Classe_age =="51_65" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="51_65"]))*100
-ageQ_65_inf_avc <- (ageQ$Fréquence[ageQ$Classe_age =="65_inf" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="65_inf"]))*100
-print(paste("Pourcentage de inf_30 AVC : " ,round(ageQ_inf_30_avc,2),"%"))
+ageQ_66_plus_avc <- (ageQ$Fréquence[ageQ$Classe_age =="66_plus" & ageQ$AVC == "avcP"] / sum(ageQ$Fréquence[ageQ$Classe_age =="66_plus"]))*100
+print(paste("Pourcentage de 0_30 AVC : " ,round(ageQ_0_30_avc,2),"%"))
 print(paste("Pourcentage de 31_50 AVC : " ,round(ageQ_31_50_avc,2),"%"))
-print(paste("Pourcentage de 51_65 AVC : " ,round(ageQ_51_65_avc,2),"%"))
-print(paste("Pourcentage de 65_inf AVC : " ,round(ageQ_65_inf_avc,2),"%"))
+print(paste("Pourcentage de 51_65 AVC : " ,round(ageQ_66_plus_avc,2),"%"))
+print(paste("Pourcentage de 66_plus AVC : " ,round(ageQ_65_inf_avc,2),"%"))
 
 # plot hist par classe d'age
 ggplot(ageQ, aes(x = Classe_age, y = Fréquence, fill = AVC)) +
@@ -304,8 +304,8 @@ data_format$glucoseQ <- cut(data_format$avg_glucose_level,
                                     ,69, 99,125
                                     , Inf), 
                          
-                         labels = c("inf_69", "70_100"
-                                    ,"101_126","127_inf"
+                         labels = c("0_69", "70_100"
+                                    ,"101_126","127_plus"
                                     ),
                          right = FALSE)
 
@@ -321,14 +321,14 @@ glucoseQ <- as.data.frame(table(data_format$glucoseQ, data_format$stroke))
 colnames(glucoseQ) <- c('Classe_glucose','AVC','Fréquence')
 
 # calcul pourcentage avc par classe de glucose
-glucoseQ_inf_69_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="inf_69" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="inf_69"]))*100
+glucoseQ_0_69_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="0_69" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="0_69"]))*100
 glucoseQ_70_100_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="70_100" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="70_100"]))*100
 glucoseQ_101_126_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="101_126" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="101_126"]))*100
-glucoseQ_127_inf_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="127_inf" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="127_inf"]))*100
-print(paste("Pourcentage de inf_69 AVC : " ,round(glucoseQ_inf_69_avc,2),"%"))
+glucoseQ_127_plus_avc <- (glucoseQ$Fréquence[glucoseQ$Classe_glucose =="127_plus" & glucoseQ$AVC == "avcP"] / sum(glucoseQ$Fréquence[glucoseQ$Classe_glucose =="127_plus"]))*100
+print(paste("Pourcentage de 0_69 AVC : " ,round(glucoseQ_0_69_avc,2),"%"))
 print(paste("Pourcentage de 70_100 AVC : " ,round(glucoseQ_70_100_avc,2),"%"))
 print(paste("Pourcentage de 101_126 AVC : " ,round(glucoseQ_101_126_avc,2),"%"))
-print(paste("Pourcentage de 127_inf AVC : " ,round(glucoseQ_127_inf_avc,2),"%"))
+print(paste("Pourcentage de 127_plus AVC : " ,round(glucoseQ_127_plus_avc,2),"%"))
 
 # plot hist par classe de glucose
 ggplot(glucoseQ, aes(x = Classe_glucose, y = Fréquence, fill = AVC)) +
@@ -380,9 +380,9 @@ data_format$bmiQ <- cut(data_format$bmi,
                                     ,24.9, 29.9, 34.9
                                     , Inf), 
                          
-                         labels = c("inf_25"
+                         labels = c("0_25"
                                     ,"25_30","30_35",
-                                    "35_inf"
+                                    "35_plus"
                                     ),
                          right = FALSE)
 
@@ -399,14 +399,14 @@ colnames(bmiQ) <- c('Classe_IMC','AVC','Fréquence')
 head(bmiQ)
 
 # calcul pourcentage avc par classe d'imc
-bmiQ_inf_25_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="inf_25" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="inf_25"]))*100
+bmiQ_0_25_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="0_25" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="0_25"]))*100
 bmiQ_25_30_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="25_30" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="25_30"]))*100
 bmiQ_30_35_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="30_35" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="30_35"]))*100
-bmiQ_35_inf_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="35_inf" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="35_inf"]))*100
-print(paste("Pourcentage de inf_25 AVC : " ,round(bmiQ_inf_25_avc,2),"%"))
+bmiQ_35_plus_avc <- (bmiQ$Fréquence[bmiQ$Classe_IMC =="35_plus" & bmiQ$AVC == "avcP"] / sum(bmiQ$Fréquence[bmiQ$Classe_IMC =="35_plus"]))*100
+print(paste("Pourcentage de 0_25 AVC : " ,round(bmiQ_0_25_avc,2),"%"))
 print(paste("Pourcentage de 25_30 AVC : " ,round(bmiQ_25_30_avc,2),"%"))
 print(paste("Pourcentage de 30_35 AVC : " ,round(bmiQ_30_35_avc,2),"%"))
-print(paste("Pourcentage de 35_inf AVC : " ,round(bmiQ_35_inf_avc,2),"%"))
+print(paste("Pourcentage de 35_plus AVC : " ,round(bmiQ_35_plus_avc,2),"%"))
 
 # plot hist par classe d'imc
 ggplot(bmiQ, aes(x = Classe_IMC, y = Fréquence, fill = AVC)) +
@@ -544,45 +544,32 @@ t$residuals # les personnes ayant un imc entre 30 et 35 ont plus de chance de fa
 ```
 ## Variables - Pourcentage AVC 
 ```{r}
-print(paste("----------------------------------------------Genre------------------------------------------------- " ))
-print(paste("Pourcentage de femme AVC : " ,round(femme_avc,2),"%"))
-print(paste("Pourcentage de homme AVC : " ,round(homme_avc,2),"%"))
-print(paste("----------------------------------------------Hypertension------------------------------------------------- " ))
-print(paste("Pourcentage de hypertension AVC : " ,round(hypertention0_avc,2),"%"))
-print(paste("Pourcentage de hypertension AVC : " ,round(hypertention1_avc,2),"%"))
-print(paste("----------------------------------------------Maladie cardiaque------------------------------------------------- " ))
-print(paste("Pourcentage de maladie cardiaque AVC : " ,round(maladie_cardiaque0,2),"%"))
-print(paste("Pourcentage de maladie cardiaque AVC : " ,round(maladie_cardiaque1,2),"%"))
-print(paste("----------------------------------------------Mariage------------------------------------------------- " ))
-print(paste("Pourcentage de pas marié AVC : " ,round(mariage_no,2),"%"))
-print(paste("Pourcentage de marié AVC : " ,round(mariage_yes,2),"%"))
-print(paste("----------------------------------------------Type Job------------------------------------------------- " ))
-print(paste("Pourcentage de job gouvernement AVC : " ,round(gouvernement_job_avc,2),"%"))
-print(paste("Pourcentage de pas de travail AVC : " ,round(pas_travail_avc,2),"%"))
-print(paste("Pourcentage de job privé AVC : " ,round(prive_avc,2),"%"))
-print(paste("Pourcentage de indépendant AVC : " ,round(independant_avc,2),"%"))
-print(paste("----------------------------------------------Type résidence------------------------------------------------- " ))
-print(paste("Pourcentage de rural AVC : " ,round(rural_avc,2),"%"))
-print(paste("Pourcentage de urbain AVC : " ,round(urbain_avc),"%"))
-print(paste("----------------------------------------------Status fumeur------------------------------------------------- " ))
-print(paste("Pourcentage de ancien fumeur AVC : " ,round(ancien_fumeur_avc,2),"%"))
-print(paste("Pourcentage de non fumeur AVC : " ,round(non_fumeur_avc,2),"%"))
-print(paste("Pourcentage de fumeur AVC : " ,round(fumeur_avc,2),"%"))
-print(paste("----------------------------------------------Classe d'age------------------------------------------------- " ))
-print(paste("Pourcentage de inf_30 AVC : " ,round(ageQ_inf_30_avc,2),"%"))
-print(paste("Pourcentage de 31_50 AVC : " ,round(ageQ_31_50_avc,2),"%"))
-print(paste("Pourcentage de 51_65 AVC : " ,round(ageQ_51_65_avc,2),"%"))
-print(paste("Pourcentage de 65_inf AVC : " ,round(ageQ_65_inf_avc,2),"%"))
-print(paste("----------------------------------------------Classe de glucose------------------------------------------------- " ))
-print(paste("Pourcentage de inf_69 AVC : " ,round(glucoseQ_inf_69_avc,2),"%"))
-print(paste("Pourcentage de 70_100 AVC : " ,round(glucoseQ_70_100_avc,2),"%"))
-print(paste("Pourcentage de 101_126 AVC : " ,round(glucoseQ_101_126_avc,2),"%"))
-print(paste("Pourcentage de 127_inf AVC : " ,round(glucoseQ_127_inf_avc,2),"%"))
-print(paste("----------------------------------------------Classe d'IMC------------------------------------------------- " ))
-print(paste("Pourcentage de inf_25 AVC : " ,round(bmiQ_inf_25_avc,2),"%"))
-print(paste("Pourcentage de 25_30 AVC : " ,round(bmiQ_25_30_avc,2),"%"))
-print(paste("Pourcentage de 30_35 AVC : " ,round(bmiQ_30_35_avc,2),"%"))
-print(paste("Pourcentage de 35_inf AVC : " ,round(bmiQ_35_inf_avc,2),"%"))
+Attribut <- c("Genre : femme","Genre : homme",
+             "Hypertension : sans","Hypertension : avec",
+             "Maladie cardiaque : sans","Maladie cardiaque : avec",
+             "Statut matrimonial : jamais","Statut matrimonial : deja",
+             "Type job : job gvt", "Type job : sans travail", "Type job : job prive","Type job : independant",
+             "Type résidence : rural","Type résidence : urbain",
+             "Statut fumeur :ancien fumeur","Statut fumeur : non fumeur","Statu fumeur : fumeur",
+             "Classe age : 0 30","Classe age : 31 50","Classe age : 51 65","Classe age : 66 plus",
+             "Classe glucose : 0 69","Classe glucose : 70 100","Classe glucose : 101 126","Classe glucose : 127 plus",
+             "Classe IMC : 0 25","Classe IMC : 25 30","Classe IMC : 30 35","Classe IMC : 35 plus")
+Pourcantage_avc <- c(round(femme_avc,2),round(homme_avc,2),
+                     round(hypertention0_avc,2),round(hypertention1_avc,2),
+                     round(maladie_cardiaque0,2),round(maladie_cardiaque1,2),
+                     round(mariage_no,2),round(mariage_yes,2),
+                     round(gouvernement_job_avc,2),round(pas_travail_avc,2),round(prive_avc,2),round(independant_avc,2),
+                     round(rural_avc,2),round(urbain_avc,2),
+                     round(ancien_fumeur_avc,2),round(non_fumeur_avc,2),round(fumeur_avc,2),
+                     round(ageQ_0_30_avc,2),round(ageQ_31_50_avc,2),round(ageQ_51_65_avc,2),round(ageQ_66_plus_avc,2),
+                     round(glucoseQ_0_69_avc,2),round(glucoseQ_70_100_avc,2),round(glucoseQ_101_126_avc,2),round(glucoseQ_127_plus_avc,2),
+                     round(bmiQ_0_25_avc,2),round(bmiQ_25_30_avc,2),round(bmiQ_30_35_avc,2),round(bmiQ_35_plus_avc,2)
+            )
+
+
+attribut_pourcentage <- data.frame(Attribut, Pourcantage_avc)
+attribut_pourcentage
+write.csv(attribut_pourcentage,"./attribut_pourcentage.csv", row.names = FALSE)
 ```
 
 # ANALYSE MULTIVARIEE
@@ -957,6 +944,7 @@ Specificité <- c(round(specificity_svm_unbalanced,2),
 
 dataset_compare <- data.frame(Methode, Erreur, Kappa, Sensibilité, Specificité)
 dataset_compare
+write.csv(dataset_compare,"./dataset_compare.csv", row.names = FALSE)
 ```
 
 
@@ -1404,6 +1392,8 @@ AUC <- c("x",
 
 modele_compare <- data.frame(Methode, Erreur,Kappa, Sensibilité, Specificité, AUC)
 modele_compare
+
+write.csv(modele_compare,"./modele_compare.csv", row.names = FALSE)
 ```
 
 ```{r}
