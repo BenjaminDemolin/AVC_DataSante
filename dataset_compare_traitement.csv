@@ -1,0 +1,16 @@
+;;;;;;;;;;
+;;;;;;;;;;
+;;;;;;;;;;
+;;Méthode;Erreur;Kappa;Sensibilité;Specificité;;;;
+;;svm unbalanced;5,26%;0;1;0;;;;
+;;rf unbalanced;5,45%;0,13;0,99;0,09;;;;
+;;svm oversample;15,42%;0,69;0,83;0,86;;;;
+;;rf oversample;9,20%;0,82;0,88;0,94;;;;
+;;svm oversample qualitative;18,65%;0,63;0,77;0,86;;;;
+;;rf oversample qualitative;15,26%;0,69;0,82;0,87;;;;
+;;svm undersample;20,37%;0,59;0,7;0,89;;;;
+;;rf undersample;24,07%;0,52;0,72;0,8;;;;
+;;;;;;;;;;
+;;;;;;;;;;
+;;;;;;;;;;
+;;;;;;;;;;

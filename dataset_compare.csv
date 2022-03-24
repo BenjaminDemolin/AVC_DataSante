@@ -1,9 +1,9 @@
 "Methode","Erreur","Kappa","Sensibilité","Specificité"
 "svm unbalanced",5.26,0,1,0
-"rf unbalanced",5.45,0.13,0.99,0.09
-"svm oversample",16.19,0.68,0.82,0.86
-"rf oversample",9.71,0.81,0.88,0.93
-"svm oversample quali",20.09,0.6,0.76,0.84
-"rf oversample quali",15.57,0.69,0.82,0.87
-"svm undersample",28.7,0.43,0.61,0.81
-"rf undersample",27.78,0.44,0.69,0.76
+"rf unbalanced",5.26,0,1,0
+"svm oversample",15.42,0.69,0.83,0.86
+"rf oversample",9.1,0.82,0.88,0.94
+"svm oversample quali",18.65,0.63,0.77,0.86
+"rf oversample quali",15.26,0.69,0.82,0.87
+"svm undersample",19.44,0.61,0.83,0.78
+"rf undersample",16.67,0.67,0.85,0.81

@@ -18,6 +18,7 @@ library(e1071)
 library(randomForest)
 library(pROC)
 library(explor)
+set.seed(42)
 ```
 
 ```{r}
@@ -58,7 +59,7 @@ data_format$smoking_status <- factor(as.factor(data_format$smoking_status),label
 
 str(data_format)
 nrow(data_format)
-
+summary(data_format)
 
 ```
 ## Variable - Age
@@ -509,38 +510,52 @@ Entre stroke et les variables qualitatives.
 # Genre
 t <- chisq.test(data_format$gender,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals #===> les hommes ont plus de chance de faire un AVC que les femmes
+t$p.value
+
+# Genre
+t <- chisq.test(data_format$hypertension,data_format$stroke) #rejet de l'hypothese d'independance
+t$residuals # les personness avec de l'hypertension ont plus de chance d'etre associees avec la survenue d'un AVC
+t$p.value
 
 # Maladie cardiaque
 t <- chisq.test(data_format$heart_disease,data_format$stroke) #rejet de l'hypothese d'independance
-t$residuals # les maladies cardiaques ont plus de chance d'etre associees avec la survenue d'un AVC
+t$residuals # les personnes avec des maladies cardiaques ont plus de chance d'etre associees avec la survenue d'un AVC
+t$p.value
 
 # Mariage
 t <- chisq.test(data_format$ever_married,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals # => les personnes ayant deja ete mariees ont plus de chance de faire un AVC
+t$p.value
 
 # Travail
 t <- chisq.test(data_format$work_type,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals # => les personnes self_employed ont plus de chance de faire un AVC
+t$p.value
 
 # Residence
 t <- chisq.test(data_format$Residence_type,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals #==> les personnes vivant en milieu urbain ont plus de chance de faire un AVC
+t$p.value
 
 # Fumeur
 t <- chisq.test(data_format$smoking_status,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals # les personnes ayant deja fume ont plus de chance de faire un AVC
+t$p.value
 
 # age
 t <- chisq.test(data_format$ageQ,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals # les personnes de plus de 65 ans ont plus de chance de faire un AVC
+t$p.value
 
 # glucose
 t <- chisq.test(data_format$glucoseQ,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals # les personnes ayant un niveau de glucose supérieur a 127 ont plus de chance de faire un AVC
+t$p.value
 
 # bmi
 t <- chisq.test(data_format$bmiQ,data_format$stroke) #rejet de l'hypothese d'independance
 t$residuals # les personnes ayant un imc entre 30 et 35 ont plus de chance de faire un AVC
+t$p.value
 ```
 ## Variables - Pourcentage AVC 
 ```{r}
@@ -571,7 +586,6 @@ attribut_pourcentage <- data.frame(Attribut, Pourcantage_avc)
 attribut_pourcentage
 write.csv(attribut_pourcentage,"./attribut_pourcentage.csv", row.names = FALSE)
 ```
-
 # ANALYSE MULTIVARIEE
 
 ```{r}
@@ -580,6 +594,7 @@ avcQ = data_format[,-c(2,8,9)]
 summary(avcQ)
 ```
 ```{r}
+# on lance une premiere AFCM
 quali <- avcQ[,-8]
 var_sup <- avcQ[,c("stroke")]
 acm <- dudi.acm(quali, scannf = FALSE, nf = 5)
@@ -587,29 +602,153 @@ acm$supv <- supcol(acm, dudi.acm(var_sup, scannf = FALSE, nf = 5)$tab)
 #explor(acm)
 ```
 
-Creation d'une variable motivée par l'étude exploratoire descriptive
+Creation d'une première variable motivée par l'étude exploratoire descriptive
 ```{r}
 # creation de la variable interaction entre age et hypertension
 AgeHypertension=avcQ$ageQ:avcQ$hypertension
 table(AgeHypertension,avcQ[,"stroke"])
 
-# test de dependence avec la variable cible
+# test de dependance avec la variable cible
 t <- chisq.test(AgeHypertension,avcQ$stroke)
 t$residuals
+#===> les personnes ayant de l'hypertension ont plus de risque de faire un AVC quelque soit leur age mais cette difference de risque est plus grande pour les personnes jeunes, les personnes plus agees ont de plus forts risques de faire un AVC qu'ils aient de l'hypertension ou non
 
-#avcQ2=data.frame(avcQ,"AgeHypertension"=AgeHypertension)
-#summary(avcQ2)
-#quali2 <- avcQ2[,-c(1,9,10)]
-#var_sup2 <- avcQ2[,c("ageQ","stroke","hypertension")]
-#acm2 <- dudi.acm(quali2, scannf = FALSE, nf = 5)
-#acm2$supv <- supcol(acm2, dudi.acm(var_sup2, scannf = FALSE, nf = 5)$tab)
+# on ajoute cette nouvelle variable interaction et on lance une deuxieme AFCM
+avcQ2=data.frame(avcQ,"AgeHypertension"=AgeHypertension)
+summary(avcQ2)
+quali2 <- avcQ2[,-c(1,9,10)]
+var_sup2 <- avcQ2[,c("ageQ","stroke","hypertension")]
+acm2 <- dudi.acm(quali2, scannf = FALSE, nf = 5)
+acm2$supv <- supcol(acm2, dudi.acm(var_sup2, scannf = FALSE, nf = 5)$tab)
 
 #explor(acm2)
 ```
 
+```{r}
+#===> la modalite htP pour les plus de 30 ans, et dans une moindre mesure pour les moins de 30 ans, semble plus consistante avec le risque d'AVC que les autres modalites (htN pour les plus de 30 ans et htN pour les plus de 30 ans)
+
+### Conclusion : on choisit de ne conserver que 4 modalités :
+### 1) moins de 30 ans sans hypertension a0_30htN ; 2) moins de 30 ans avec hypertension a0_30htP ; 3) plus de 30 ans sans hypertension a30_plushtN ; 4) plus de 30 ans avec hypertension a30_plushtP
+
+AgHt=as.factor(rep(c("a0_30htN","a0_30htP","a30_plushtN", "a30_plushtP"),90))
+AgHt[avcQ2$AgeHypertension=="0_30:htN"]="a0_30htN" # jeunes sans hypertension
+AgHt[avcQ2$AgeHypertension=="0_30:htP"]="a0_30htP" # jeunes avec hypertension
+AgHt[avcQ2$AgeHypertension=="31_50:htN" | avcQ2$AgeHypertension=="51_65:htN" | avcQ2$AgeHypertension=="66_plus:htN"]="a30_plushtN" # plus de 30 ans sans hypertension
+AgHt[avcQ2$AgeHypertension=="31_50:htP" | avcQ2$AgeHypertension=="51_65:htP" | avcQ2$AgeHypertension=="66_plus:htP"]="a30_plushtP" # plus de 30 ans avec hypertension
+summary(AgHt)
+
+avcQ3=data.frame(avcQ,"AgeHypertension"=AgHt)
+summary(avcQ3)
+
+### Finalement, 3e AFCM
+quali3 <- avcQ3[,-c(1,9,10)]
+var_sup3 <- avcQ3[,c("ageQ","stroke","hypertension")]
+acm3 <- dudi.acm(quali3, scannf = FALSE, nf = 5)
+acm3$supv <- supcol(acm3, dudi.acm(var_sup3, scannf = FALSE, nf = 5)$tab)
+
+#explor(acm3)
+###===> Les jeunes (moins de 30 ans) sont bien consistants avec un faible risque d'AVC
+```
+
+Creation d'une deuxième variable motivée par l'étude exploratoire descriptive
+```{r}
+# creation de la variable interaction entre age et maladie cardiaque
+AgeCardiaque=avcQ$ageQ:avcQ$heart_disease
+table(AgeCardiaque,avcQ[,"stroke"])
+
+# test de dependance avec la variable cible
+t <- chisq.test(AgeCardiaque,avcQ$stroke)
+t$residuals
+#===> les personnes ayant une maladie cardiaque ont plus de risque de faire un AVC mais cette tendance se reduit au-dela de 50 ans et meme s'inverse pour les plus de 65 ans, qui ont un risque eleve dans tous les cas mais plus fort en l'absence de maladie cardiaque
+
+# on ajoute cette nouvelle variable interaction et on lance une deuxieme AFCM
+avcQ2=data.frame(avcQ,"AgeCardiaque"=AgeCardiaque)
+summary(avcQ2)
+quali2 <- avcQ2[,-c(1,9,10)]
+var_sup2 <- avcQ2[,c("ageQ","stroke","heart_disease")]
+acm2 <- dudi.acm(quali2, scannf = FALSE, nf = 5)
+acm2$supv <- supcol(acm2, dudi.acm(var_sup2, scannf = FALSE, nf = 5)$tab)
+
+#explor(acm2)
+```
+
+```{r}
+#===> la modalite hdP pour les plus de 30 ans, et dans une moindre mesure pour les moins de 30 ans, semble plus consistante avec le risque d'AVC que les autres modalites (hdN pour les plus de 30 ans et hdN pour les plus de 30 ans)
+
+### Conclusion : on choisit de ne conserver que 3 modalités :
+### 1) moins de 30 ans sans maladie cardiaque a0_30hdN ; 2) plus de 30 ans sans maladie cardiaque a30_plushdN ; 3) tous ages avec maladie cardiaque a0_plushdP
+
+AgMc=as.factor(rep(c("a0_30hdN","a30_plushdN","a0_plushdP"),90))
+AgMc[avcQ2$AgeCardiaque=="0_30:hdN"]="a0_30hdN" # jeunes sans maladie cardiaque
+AgMc[avcQ2$AgeCardiaque=="31_50:hdN" | avcQ2$AgeCardiaque=="51_65:hdN" | avcQ2$AgeCardiaque=="66_plus:hdN"]="a30_plushdN" # plus de 30 ans sans maladie cardiaque
+AgMc[avcQ2$AgeCardiaque=="0_30:hdP" | avcQ2$AgeCardiaque=="31_50:hdP" | avcQ2$AgeCardiaque=="51_65:hdP" | avcQ2$AgeCardiaque=="66_plus:hdP"]="a0_plushdP" # tous ages avec maladie cardiaque
+summary(AgMc)
+
+avcQ3=data.frame(avcQ,"AgeCardiaque"=AgMc)
+summary(avcQ3)
+
+### Finalement, 3e AFCM
+quali3 <- avcQ3[,-c(1,9,10)]
+var_sup3 <- avcQ3[,c("ageQ","stroke","heart_disease")]
+acm3 <- dudi.acm(quali3, scannf = FALSE, nf = 5)
+acm3$supv <- supcol(acm3, dudi.acm(var_sup3, scannf = FALSE, nf = 5)$tab)
+
+#explor(acm3)
+###===> Les personnes plus agees (plus de 50 ans) sont bien consistants avec un plus fort risque d'AVC
+```
+
+Creation d'une troisième variable motivée par l'étude exploratoire descriptive
+```{r}
+# creation de la variable interaction entre age et hypertension
+GlucHypertension=avcQ$glucoseQ:avcQ$hypertension
+table(GlucHypertension,avcQ[,"stroke"])
+
+# test de dependance avec la variable cible
+t <- chisq.test(GlucHypertension,avcQ$stroke)
+t$residuals
+#===> les personnes ayant de l'hypertension ont plus de risque de faire un AVC quelque soit leur niveau de glucose mais le risque d'AVC augmente avec un niveau de glucose qui n'est pas entre 70 et 100
+
+# on ajoute cette nouvelle variable interaction et on lance une deuxieme AFCM
+avcQ2=data.frame(avcQ,"GlucHypertension"=GlucHypertension)
+summary(avcQ2)
+quali2 <- avcQ2[,-c(1,9,10)]
+var_sup2 <- avcQ2[,c("glucoseQ","stroke","hypertension")]
+acm2 <- dudi.acm(quali2, scannf = FALSE, nf = 5)
+acm2$supv <- supcol(acm2, dudi.acm(var_sup2, scannf = FALSE, nf = 5)$tab)
+
+#explor(acm2)
+```
+
+```{r}
+#===> les modalites gl127_plus avec ou sans hypertension et la hdP qu'importe le niveau de glucose semblent plus consistantes avec le risque d'AVC que les autres modalites (htN pour un niveau de glucose inferieur a 127)
+
+### Conclusion : on choisit de ne conserver que 3 modalités :
+### 1) glucose sous 127 sans hypertension gl0_127htN ; 2) glucose superieur a 127 sans hypertension gl127_plushtP ; 3) tous niveaux de glucose avec hypertension gl0_plushtP
+
+GlHt=as.factor(rep(c("gl0_127htN","gl127_plushtN","gl0_plushtP"),90))
+GlHt[avcQ2$GlucHypertension=="0_69:htN" | avcQ2$GlucHypertension=="70_100:htN" | avcQ2$GlucHypertension=="100_plus:htN"]="gl0_127htN" # glucose sous 127 sans hypertension
+GlHt[avcQ2$GlucHypertension=="127_plus:htN"]="gl127_plushtN" # glucose superieur a 127 sans hypertension
+GlHt[avcQ2$GlucHypertension=="0_69:htP" | avcQ2$GlucHypertension=="70_100:htP" | avcQ2$GlucHypertension=="101_126:htP" | avcQ2$GlucHypertension=="127_plus:htP"]="gl0_plushtP" # tous niveaux de glucose avec hypertension
+summary(GlHt)
+
+avcQ3=data.frame(avcQ,"GlucHypertension"=GlHt)
+summary(avcQ3)
+
+### Finalement, 3e AFCM
+quali3 <- avcQ3[,-c(1,9,10)]
+var_sup3 <- avcQ3[,c("glucoseQ","stroke","hypertension")]
+acm3 <- dudi.acm(quali3, scannf = FALSE, nf = 5)
+acm3$supv <- supcol(acm3, dudi.acm(var_sup3, scannf = FALSE, nf = 5)$tab)
+
+#explor(acm3)
+###===> L'hypertension, et dans une moindre mesure un fort taux de glucose, est bien consistante avec un fort risque d'AVC
+```
+
+
 # Equilibrage du jeu de données
 
 ```{r}
+set.seed(42)
 imbalanceRatio(as.data.frame(data_format), classAttr = "stroke")
 
 stroke_test <- data_format %>%
@@ -639,6 +778,7 @@ for ( i in 1:ncol(data_format)) {
 str(stroke_oversampled)
 ```
 ```{r}
+set.seed(42)
 data_format_undersample <- data_format %>% 
   group_by(stroke) %>% 
   sample_n(180)
@@ -713,6 +853,7 @@ df_control <- trainControl(method="cv", #validation croisee
 # Comparaison dataset
 ## dataset de départ
 ```{r}
+set.seed(42)
 print("SVM")
 # apprentissage
 model_svm_unbalanced=svm(stroke~., data=df_training_unbalanced, cost=0.5, kernel="linear")     
@@ -761,6 +902,7 @@ specificity_rf_unbalanced <- specificity(prediction_rf_unbalanced, df_testing_un
 
 ## dataset de départ avec oversample
 ```{r}
+set.seed(42)
 print("SVM")
 # apprentissage
 model_svm_over=svm(stroke~., data=df_training_over, cost=0.5, kernel="linear")     
@@ -809,6 +951,7 @@ specificity_rf_over <- specificity(prediction_rf_over, df_testing_over$stroke)
 
 ## dataset avec variables qualitatives et oversample
 ```{r}
+set.seed(42)
 print("SVM")
 # apprentissage
 model_svm_over_quali=svm(stroke~., data=df_training_over_quali, cost=0.5, kernel="linear")     
@@ -857,6 +1000,7 @@ specificity_rf_over_quali <- specificity(prediction_rf_over_quali, df_testing_ov
 
 ## dataset avec variables départ et undersample
 ```{r}
+set.seed(42)
 print("SVM")
 # apprentissage
 model_svm_under=svm(stroke~., data=df_training_under, cost=0.5, kernel="linear")     
@@ -953,7 +1097,7 @@ write.csv(dataset_compare,"./dataset_compare.csv", row.names = FALSE)
 ### Sans optimisation
 ```{r}
 # apprentissage
-
+set.seed(42)
 model_glm <- glm(stroke ~., data=df_training_over, family=binomial(link="logit")) 
 summary(model_glm)
 
@@ -983,16 +1127,14 @@ specificity_glm
 
 ### Avec optimisation
 ```{r}
-# apprentissage et tuning
 set.seed(42)
+# apprentissage et tuning
 model_glm_tuned = train(stroke ~.,
                 df_training_over,
                 method = "glmStepAIC", ## selection forward par minimisation de l'AIC
                 metric="ROC",
                 preProcess = c("scale", "center"),
                 trControl = df_control)
-
-summary(model_glm_tuned$finalModel)
 
 # prediction 
 prediction_glm_tuned <- predict(model_glm_tuned, df_testing_over)
@@ -1014,14 +1156,17 @@ sensitivity_glm_tuned
 specificity_glm_tuned <- specificity(prediction_glm_tuned, df_testing_over$stroke)
 specificity_glm_tuned
 ```
+```{r}
+summary(model_glm_tuned$finalModel)
+```
 
 
 ## K-NN
 ### Sans optimisation
 ### Avec optimisation
 ```{r}
-# apprentissage et tuning
 set.seed(42)
+# apprentissage et tuning
 grid <- expand.grid(.k=seq(1,50,by=1))
 model_knn_tuned <- train(stroke ~.,
                          data = df_training_over, 
@@ -1032,7 +1177,6 @@ model_knn_tuned <- train(stroke ~.,
                          trControl = df_control)
 
 # affichage du modele
-model_knn_tuned$finalModel
 k = model_knn_tuned$results$k[model_knn_tuned$results$ROC == max(model_knn_tuned$results$ROC)]
 ggplot(model_knn_tuned)+geom_vline(xintercept = k,color ='red') # performance metric (ROC) en fonction des valeurs de C (le parametre a optimiser)
 
@@ -1057,6 +1201,10 @@ specificity_knn_tuned <- specificity(prediction_knn_tuned, df_testing_over$strok
 specificity_knn_tuned
 ```
 
+```{r}
+model_knn_tuned$finalModel
+```
+
 
 Nombre de cluster opt
 ```{r}
@@ -1066,6 +1214,7 @@ k
 ### Sans optimisation
 
 ```{r}
+set.seed(42)
 # apprentissage
 model_svm=svm(stroke~., data=df_training_over, cost=0.5, kernel="linear")     
 
@@ -1091,6 +1240,7 @@ specificity_svm
 
 ### Avec optimisation
 ```{r}
+set.seed(42)
 # apprentissage et tuning
 grid <- expand.grid(C=seq(0.01,1,0.03))  
 model_svm_tuned <- train(stroke ~., data = df_training_over, 
@@ -1101,7 +1251,6 @@ model_svm_tuned <- train(stroke ~., data = df_training_over,
                 trControl = df_control)
 
 # affichage du modele
-model_svm_tuned$finalModel
 c = model_svm_tuned$results$C[model_svm_tuned$results$ROC == max(model_svm_tuned$results$ROC)]
 ggplot(model_svm_tuned)+geom_vline(xintercept = c,color ='red')
 
@@ -1124,6 +1273,11 @@ sensitivity_svm_tuned
 specificity_svm_tuned <- specificity(prediction_svm_tuned, df_testing_over$stroke)
 specificity_svm_tuned
 ```
+
+```{r}
+model_svm_tuned$finalModel
+```
+
 Coût
 ```{r}
 c
@@ -1131,7 +1285,7 @@ c
 ## Arbre de décision
 ### Sans optimisation
 ```{r}
-
+set.seed(42)
 # apprentissage
 tree <- rpart(stroke ~.,data=df_training_over, method="class",
               control=rpart.control(minsplit=1,cp=0,xval=10))
@@ -1162,9 +1316,9 @@ specificity_tree
 
 ### Avec optimisation
 ```{r}
+set.seed(42)
 # apprentissage et tuning
-
-grid <- expand.grid(cp=seq(0.01,1,0.01)) 
+grid <- expand.grid(cp=seq(0.001,0.01,0.001)) 
 model_tree_tuned = train(stroke ~., 
                   data=df_training_over, 
                   method="rpart", 
@@ -1174,9 +1328,6 @@ model_tree_tuned = train(stroke ~.,
                   trControl = df_control)
 
 # affichage du modele
-model_tree_tuned$finalModel
-summary(model_tree_tuned$finalModel)
-
 plot(model_tree_tuned$finalModel, uniform=TRUE, main="Pruned Classification Tree")
 
 text(model_tree_tuned$finalModel, use.n.=TRUE, all=TRUE, cex=.8)
@@ -1200,6 +1351,9 @@ sensitivity_tree_tuned
 specificity_tree_tuned <- specificity(prediction_tree_tuned, df_testing_over$stroke)
 specificity_tree_tuned
 ```
+```{r}
+model_tree_tuned$finalModel
+```
 
 
 ## Forêt aléatoire
@@ -1207,6 +1361,7 @@ specificity_tree_tuned
 
 ```{r}
 # apprentissage
+set.seed(42)
 model_rf <- train(stroke ~., 
                 data = df_training_over, 
                 method = "rf", 
@@ -1239,6 +1394,7 @@ specificity_rf
 ### Avec optimisation
 ```{r}
 # apprentissage et tuning
+set.seed(42)
 grid <- expand.grid(mtry=2:10)
 
 model_rf_tuned <- train(stroke ~., 
@@ -1252,8 +1408,6 @@ model_rf_tuned <- train(stroke ~.,
 # affichage du modele
 plot(model_rf_tuned)
 plot(model_rf_tuned$finalModel)
-
-model_rf_tuned$finalModel
 varImpPlot(model_rf_tuned$finalModel, sort = TRUE, n.var = 13, main = "Variables importance")
 
 # prediction
@@ -1274,6 +1428,9 @@ sensitivity_rf_tuned <- sensitivity(prediction_rf_tuned, df_testing_over$stroke)
 sensitivity_rf_tuned
 specificity_rf_tuned <- specificity(prediction_rf_tuned, df_testing_over$stroke)
 specificity_rf_tuned
+```
+```{r}
+model_rf_tuned$finalModel
 ```
 
 
